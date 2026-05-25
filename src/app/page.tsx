@@ -241,8 +241,11 @@ export default function CyberLab() {
       if (!res.ok) throw new Error(`Failed to fetch labs: ${res.status}`)
       const data = await res.json()
       setLabs(data)
-    } catch (e) { console.error(e) }
-  }, [])
+    } catch (error) {
+      console.error('Failed to fetch labs:', error)
+      toast({ title: 'Ошибка загрузки', description: 'Не удалось загрузить лабораторные работы.', variant: 'destructive' })
+    }
+  }, [toast])
 
   const fetchDashboard = useCallback(async () => {
     try {
@@ -250,8 +253,11 @@ export default function CyberLab() {
       if (!res.ok) throw new Error(`Failed to fetch dashboard: ${res.status}`)
       const data = await res.json()
       setDashboard(data)
-    } catch (e) { console.error(e) }
-  }, [])
+    } catch (error) {
+      console.error('Failed to fetch dashboard:', error)
+      toast({ title: 'Ошибка загрузки', description: 'Не удалось загрузить статистику.', variant: 'destructive' })
+    }
+  }, [toast])
 
   const fetchStudents = useCallback(async () => {
     try {
@@ -259,8 +265,11 @@ export default function CyberLab() {
       if (!res.ok) throw new Error(`Failed to fetch students: ${res.status}`)
       const data = await res.json()
       setStudents(data)
-    } catch (e) { console.error(e) }
-  }, [])
+    } catch (error) {
+      console.error('Failed to fetch students:', error)
+      toast({ title: 'Ошибка загрузки', description: 'Не удалось загрузить список студентов.', variant: 'destructive' })
+    }
+  }, [toast])
 
   const fetchProgress = useCallback(async () => {
     if (!selectedStudent) return
@@ -270,8 +279,11 @@ export default function CyberLab() {
       const data = await res.json()
       setFoundFlags(data.found || [])
       setProgressRecords(data.progress || [])
-    } catch (e) { console.error(e) }
-  }, [selectedStudent])
+    } catch (error) {
+      console.error('Failed to fetch progress:', error)
+      toast({ title: 'Ошибка загрузки', description: 'Не удалось загрузить прогресс студента.', variant: 'destructive' })
+    }
+  }, [selectedStudent, toast])
 
   const fetchArticles = useCallback(async (page: number = 1, search: string = '', category: string = 'all') => {
     setBlogLoading(true)
@@ -285,9 +297,12 @@ export default function CyberLab() {
       setArticles(data.articles)
       setBlogPage(data.page)
       setBlogTotalPages(data.totalPages)
-    } catch (e) { console.error(e) }
+    } catch (error) {
+      console.error('Failed to fetch articles:', error)
+      toast({ title: 'Ошибка загрузки', description: 'Не удалось загрузить статьи.', variant: 'destructive' })
+    }
     setBlogLoading(false)
-  }, [])
+  }, [toast])
 
   useEffect(() => {
     const init = async () => {
