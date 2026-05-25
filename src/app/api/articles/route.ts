@@ -21,6 +21,11 @@ export async function GET(req: Request) {
     const search = searchParams.get('search')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '9')
+
+    // Validate pagination
+    if (page < 1 || limit < 1 || limit > 50) {
+      return NextResponse.json({ error: 'Invalid pagination parameters' }, { status: 400 })
+    }
     const slug = searchParams.get('slug')
 
     if (slug) {

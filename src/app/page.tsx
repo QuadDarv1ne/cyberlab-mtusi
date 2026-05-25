@@ -34,7 +34,14 @@ export default function CyberLab() {
   const [progressRecords, setProgressRecords] = useState<ProgressRecord[]>([])
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [darkMode, setDarkMode] = useState(false)
+  const [darkMode, setDarkMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cyberlab-dark-mode')
+      return saved === 'true'
+    } catch {
+      return false
+    }
+  })
   const [submitting, setSubmitting] = useState<Record<string, boolean>>({})
   const [catalogSearch, setCatalogSearch] = useState('')
   const [catalogCategoryFilter, setCatalogCategoryFilter] = useState<string>('all')
@@ -48,14 +55,6 @@ export default function CyberLab() {
   const [blogTotalPages, setBlogTotalPages] = useState(1)
   const statsRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    const saved = localStorage.getItem('cyberlab-dark-mode')
-    if (saved !== null) {
-      const isDark = saved === 'true'
-      setDarkMode(isDark)
-      document.documentElement.classList.toggle('dark', isDark)
-    }
-  }, [])
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode)
@@ -64,8 +63,11 @@ export default function CyberLab() {
 
   const selectedStudent = students[selectedStudentIdx] || null
 
-  const handleTabSwitch = (tabId: string) => {
+  const handleTabSwitch = async (tabId: string) => {
     setActiveTab(tabId)
+    if (tabId === 'dashboard' && selectedStudent) {
+      await fetchProgress()
+    }
   }
 
   useEffect(() => {
@@ -157,15 +159,15 @@ export default function CyberLab() {
     init()
   }, [fetchLabs, fetchDashboard, fetchStudents])
 
-  useEffect(() => {
-    if (selectedStudent) fetchProgress()
-  }, [selectedStudent, fetchProgress])
+  const handleBlogFetch = useCallback(async (page: number, search: string, category: string) => {
+    await fetchArticles(page, search, category)
+  }, [fetchArticles])
 
   useEffect(() => {
     if (activeTab === 'blog') {
-      fetchArticles(blogPage, blogSearch, blogCategory)
+      handleBlogFetch(blogPage, blogSearch, blogCategory)
     }
-  }, [activeTab, blogPage, blogSearch, blogCategory, fetchArticles])
+  }, [activeTab, blogPage, blogSearch, blogCategory, handleBlogFetch])
 
   const submitFlag = async (labId: string, flagKey: string) => {
     const resultKey = `${labId}-${flagKey}`
@@ -254,32 +256,32 @@ export default function CyberLab() {
               <span className="font-bold text-lg hidden sm:inline">CyberLab</span>
             </div>
 
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden md:flex items-center gap-1" role="navigation" aria-label="Основная навигация">
               {NAV_TABS.map(tab => (
-                <Button key={tab.id} variant={activeTab === tab.id ? 'secondary' : 'ghost'} size="sm" className="gap-2" onClick={() => handleTabSwitch(tab.id)}>
+                <Button key={tab.id} variant={activeTab === tab.id ? 'secondary' : 'ghost'} size="sm" className="gap-2" onClick={() => handleTabSwitch(tab.id)} aria-current={activeTab === tab.id ? 'page' : undefined}>
                   {tab.icon}{tab.label}
                 </Button>
               ))}
             </nav>
 
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => setDarkMode(prev => !prev)} title={darkMode ? 'Светлая тема' : 'Тёмная тема'}>
+              <Button variant="ghost" size="icon" onClick={() => setDarkMode(prev => !prev)} aria-label={darkMode ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'}>
                 {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </Button>
               {selectedStudent && (
-                <Badge variant="outline" className="hidden sm:flex gap-1">
+                <Badge variant="outline" className="hidden sm:flex gap-1" aria-label={`Активный студент: ${selectedStudent.name}`}>
                   <GraduationCap className="w-3 h-3" />
                   {selectedStudent.name}
                 </Badge>
               )}
-              <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+              <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label={mobileMenuOpen ? 'Закрыть меню' : 'Открыть меню'} aria-expanded={mobileMenuOpen}>
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </Button>
             </div>
           </div>
 
           {mobileMenuOpen && (
-            <div className="md:hidden pb-4 space-y-1">
+            <div className="md:hidden pb-4 space-y-1" role="navigation" aria-label="Мобильное меню">
               {NAV_TABS.map(tab => (
                 <Button key={tab.id} variant={activeTab === tab.id ? 'secondary' : 'ghost'} className="w-full justify-start gap-2" onClick={() => { handleTabSwitch(tab.id); setMobileMenuOpen(false) }}>
                   {tab.icon}{tab.label}
@@ -407,15 +409,22 @@ export default function CyberLab() {
                     className="w-full pl-10 pr-4 py-2 border rounded-md bg-background"
                     value={blogSearch}
                     onChange={(e) => { setBlogSearch(e.target.value); setBlogPage(1) }}
+                    aria-label="Поиск статей"
+                    role="searchbox"
+                    onKeyDown={(e) => { if (e.key === 'Enter') setBlogPage(1) }}
                   />
                 </div>
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-2 flex-wrap" role="group" aria-label="Фильтр по категории">
                   {['all', 'Кибербезопасность', 'Учебные материалы', 'Новости и обзоры'].map(cat => (
                     <Badge
                       key={cat}
                       variant={blogCategory === cat ? 'default' : 'outline'}
                       className="cursor-pointer select-none"
                       onClick={() => { setBlogCategory(cat); setBlogPage(1) }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setBlogCategory(cat); setBlogPage(1) } }}
+                      aria-pressed={blogCategory === cat}
                     >
                       {cat === 'all' ? 'Все' : cat}
                     </Badge>

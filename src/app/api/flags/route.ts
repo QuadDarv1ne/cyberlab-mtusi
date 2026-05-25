@@ -56,6 +56,18 @@ export async function POST(req: Request) {
 
     const { studentId, labId, flagKey, flagValue } = parsed.data
 
+    // Verify student exists
+    const student = await db.student.findUnique({ where: { id: studentId } })
+    if (!student) {
+      return NextResponse.json({ error: 'Студент не найден' }, { status: 404 })
+    }
+
+    // Verify lab exists
+    const lab = await db.lab.findUnique({ where: { id: labId } })
+    if (!lab) {
+      return NextResponse.json({ error: 'Лабораторная работа не найдена' }, { status: 404 })
+    }
+
     // Rate limiting: 10 attempts per minute per student+lab
     const rateKey = `${studentId}:${labId}`
     const rate = checkRateLimit(rateKey)
@@ -106,8 +118,8 @@ export async function POST(req: Request) {
           where: { studentId_labId: { studentId, labId } }
         })
 
-        const lab = await tx.lab.findUnique({ where: { id: labId }, include: { flags: true } })
-        const totalFlags = lab?.flags.length ?? 0
+        const labWithFlags = await tx.lab.findUnique({ where: { id: labId }, include: { flags: true } })
+        const totalFlags = labWithFlags?.flags.length ?? 0
 
         if (existing) {
           const newFlagsFound = existing.flagsFound + 1
