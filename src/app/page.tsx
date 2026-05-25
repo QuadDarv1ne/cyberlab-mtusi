@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState, useCallback, useRef } from 'react'
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import {
   Shield, Terminal, Target, Trophy, Users, BookOpen,
   ChevronRight, CheckCircle2, Clock, AlertCircle, Zap,
@@ -144,7 +144,7 @@ const NAV_TABS = [
 function useCountUp(end: number, duration: number = 800, visible: boolean = true) {
   const [count, setCount] = useState(0)
   useEffect(() => {
-    if (!visible) return
+    if (!visible) return undefined
     let start = 0
     const increment = end / (duration / 16)
     const timer = setInterval(() => {
@@ -156,7 +156,6 @@ function useCountUp(end: number, duration: number = 800, visible: boolean = true
         setCount(Math.floor(start))
       }
     }, 16)
-    // eslint-disable-next-line consistent-return
     return (): void => { clearInterval(timer) }
   }, [end, duration, visible])
   return count
@@ -223,7 +222,7 @@ export default function CyberLab() {
 
   // Stats intersection observer for entrance animation
   useEffect(() => {
-    if (!statsRef.current) return
+    if (!statsRef.current) return undefined
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -233,7 +232,6 @@ export default function CyberLab() {
       { threshold: 0.2 }
     )
     observer.observe(statsRef.current)
-    // eslint-disable-next-line consistent-return
     return (): void => { observer.disconnect() }
   }, [loading])
 
@@ -360,15 +358,15 @@ export default function CyberLab() {
   const getLabProgress = (labId: string) =>
     progressRecords.find(p => p.labId === labId)
 
-  // Filtered labs for catalog
-  const filteredLabs = labs.filter(lab => {
+  // Filtered labs for catalog (memoized to prevent recalculation on every render)
+  const filteredLabs = useMemo(() => labs.filter(lab => {
     const matchesSearch = catalogSearch.trim() === '' ||
       lab.title.toLowerCase().includes(catalogSearch.toLowerCase()) ||
       lab.description.toLowerCase().includes(catalogSearch.toLowerCase())
     const matchesCategory = catalogCategoryFilter === 'all' || lab.category === catalogCategoryFilter
     const matchesDifficulty = catalogDifficultyFilter === 'all' || lab.difficulty === catalogDifficultyFilter
     return matchesSearch && matchesCategory && matchesDifficulty
-  })
+  }), [labs, catalogSearch, catalogCategoryFilter, catalogDifficultyFilter])
 
   /* ---- Animated counter ---- */
 
@@ -1045,7 +1043,7 @@ function StatCard({ icon, label, value, color, isPercentage }: {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {dashboard.studentStats.sort((a, b) => b.totalScore - a.totalScore).map((s, idx) => (
+              {[...dashboard.studentStats].sort((a, b) => b.totalScore - a.totalScore).map((s, idx) => (
                 <div key={s.id} className={`flex items-center gap-4 p-3 rounded-lg transition-colors ${s.id === selectedStudent?.id ? 'bg-cyan-500/10 border border-cyan-500/20' : 'bg-muted/50'}`}>
                   <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
                     idx === 0 ? 'bg-amber-500 text-white' : idx === 1 ? 'bg-slate-400 text-white' : idx === 2 ? 'bg-orange-400 text-white' : 'bg-muted text-muted-foreground'

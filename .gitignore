@@ -33,3 +33,6 @@ yarn-error.log*
 
 # Bun
 bun.lock
+
+# TypeScript incremental build
+*.tsbuildinfo
