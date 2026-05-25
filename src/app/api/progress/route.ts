@@ -9,6 +9,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'studentId is required' }, { status: 400 })
   }
 
+  if (typeof studentId !== 'string' || studentId.length > 100) {
+    return NextResponse.json({ error: 'Invalid studentId' }, { status: 400 })
+  }
+
   const found = await db.flagSubmission.findMany({
     where: { studentId, correct: true },
     select: { labId: true, flagKey: true }

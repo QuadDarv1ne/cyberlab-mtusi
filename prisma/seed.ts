@@ -3,10 +3,10 @@ import { db } from '@/lib/db'
 async function seed() {
   // Create students
   const student1 = await db.student.create({
-    data: { name: 'Дуплей Максим Игоревич', group: '' }
+    data: { name: 'Дуплей Максим Игоревич', group: 'УБВТ-24-04' }
   })
   const student2 = await db.student.create({
-    data: { name: 'Думилин Вадим Владиславович', group: '' }
+    data: { name: 'Думилин Вадим Владиславович', group: 'УБВТ-24-04' }
   })
 
   // Create labs

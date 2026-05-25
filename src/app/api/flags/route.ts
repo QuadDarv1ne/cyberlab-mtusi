@@ -9,6 +9,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
+  if (typeof studentId !== 'string' || typeof labId !== 'string' ||
+      typeof flagKey !== 'string' || typeof flagValue !== 'string') {
+    return NextResponse.json({ error: 'Invalid field types' }, { status: 400 })
+  }
+
+  if (flagValue.length > 200) {
+    return NextResponse.json({ error: 'Flag value too long' }, { status: 400 })
+  }
+
   // Check if this flag was already submitted correctly by this student
   const existingCorrect = await db.flagSubmission.findFirst({
     where: { studentId, labId, flagKey, correct: true }
@@ -34,10 +43,16 @@ export async function POST(req: Request) {
 
   const correct = flag.flagValue === flagValue
 
-  // Record submission
-  await db.flagSubmission.create({
-    data: { studentId, labId, flagKey, flagValue, correct }
+  // Only record the first attempt and the correct submission (not repeated wrong guesses)
+  const previousAttempts = await db.flagSubmission.findMany({
+    where: { studentId, labId, flagKey }
   })
+
+  if (previousAttempts.length === 0 || correct) {
+    await db.flagSubmission.create({
+      data: { studentId, labId, flagKey, flagValue, correct }
+    })
+  }
 
   if (correct) {
     // Update progress

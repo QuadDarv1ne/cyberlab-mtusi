@@ -541,7 +541,7 @@ export default function CyberLab() {
     const totalPoints = selectedLab.flags.reduce((sum, f) => sum + f.points, 0)
     const foundCount = selectedLab.flags.filter(f => isFlagFound(selectedLab.id, f.flagKey)).length
     const myProgress = getLabProgress(selectedLab.id)
-    const allFound = foundCount === 0 && selectedLab.flags.length > 0
+    const noneFound = foundCount === 0 && selectedLab.flags.length > 0
 
     return (
       <div className="space-y-6">
@@ -587,7 +587,7 @@ export default function CyberLab() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Empty state when no flags found yet */}
-                {allFound && selectedLab.flags.length > 0 && (
+                {noneFound && selectedLab.flags.length > 0 && (
                   <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50 border border-dashed mb-4">
                     <Search className="w-5 h-5 text-muted-foreground shrink-0" />
                     <div>
