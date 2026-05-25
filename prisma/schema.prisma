@@ -64,4 +64,10 @@ model FlagSubmission {
   flagValue String
   correct   Boolean
   createdAt DateTime @default(now())
+
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lab       Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, labId, flagKey])
+  @@index([studentId, correct])
 }

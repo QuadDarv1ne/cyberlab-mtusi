@@ -6,8 +6,8 @@ import {
   ChevronRight, CheckCircle2, Clock, AlertCircle, Zap,
   Search, Lock, Bug, Network, ArrowRight, Star, Flag,
   BarChart3, GraduationCap, Lightbulb, Send, Menu, X,
-  Moon, Sun, Play, Award, Flame, Info, Code, Database,
-  LayoutDashboard, FileSearch
+  Moon, Sun, Award, Flame, Info, Code, Database,
+  FileSearch
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -126,6 +126,27 @@ const NAV_TABS = [
   { id: 'about', label: 'О проекте', icon: <Info className="w-4 h-4" /> },
 ]
 
+/* ---- Animated counter hook (must be at module level per React rules) ---- */
+function useCountUp(end: number, duration: number = 800, visible: boolean = true) {
+  const [count, setCount] = useState(0)
+  useEffect(() => {
+    if (!visible) return
+    let start = 0
+    const increment = end / (duration / 16)
+    const timer = setInterval(() => {
+      start += increment
+      if (start >= end) {
+        setCount(end)
+        clearInterval(timer)
+      } else {
+        setCount(Math.floor(start))
+      }
+    }, 16)
+    return () => clearInterval(timer)
+  }, [end, duration, visible])
+  return count
+}
+
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
@@ -198,6 +219,7 @@ export default function CyberLab() {
   const fetchLabs = useCallback(async () => {
     try {
       const res = await fetch('/api/labs')
+      if (!res.ok) throw new Error(`Failed to fetch labs: ${res.status}`)
       const data = await res.json()
       setLabs(data)
     } catch (e) { console.error(e) }
@@ -206,6 +228,7 @@ export default function CyberLab() {
   const fetchDashboard = useCallback(async () => {
     try {
       const res = await fetch('/api/dashboard')
+      if (!res.ok) throw new Error(`Failed to fetch dashboard: ${res.status}`)
       const data = await res.json()
       setDashboard(data)
     } catch (e) { console.error(e) }
@@ -214,6 +237,7 @@ export default function CyberLab() {
   const fetchStudents = useCallback(async () => {
     try {
       const res = await fetch('/api/students')
+      if (!res.ok) throw new Error(`Failed to fetch students: ${res.status}`)
       const data = await res.json()
       setStudents(data)
     } catch (e) { console.error(e) }
@@ -223,6 +247,7 @@ export default function CyberLab() {
     if (!selectedStudent) return
     try {
       const res = await fetch(`/api/progress?studentId=${selectedStudent.id}`)
+      if (!res.ok) throw new Error(`Failed to fetch progress: ${res.status}`)
       const data = await res.json()
       setFoundFlags(data.found || [])
       setProgressRecords(data.progress || [])
@@ -302,26 +327,7 @@ export default function CyberLab() {
     return matchesSearch && matchesCategory && matchesDifficulty
   })
 
-  /* ---- Animated counter hook ---- */
-  const useCountUp = (end: number, duration: number = 800, visible: boolean = true) => {
-    const [count, setCount] = useState(0)
-    useEffect(() => {
-      if (!visible) return
-      let start = 0
-      const increment = end / (duration / 16)
-      const timer = setInterval(() => {
-        start += increment
-        if (start >= end) {
-          setCount(end)
-          clearInterval(timer)
-        } else {
-          setCount(Math.floor(start))
-        }
-      }, 16)
-      return () => clearInterval(timer)
-    }, [end, duration, visible])
-    return count
-  }
+  /* ---- Animated counter ---- */
 
   /* ---- Render Helpers ---- */
   const DifficultyBadge = ({ level }: { level: string }) => {
@@ -485,7 +491,14 @@ export default function CyberLab() {
             const foundCount = lab.flags.filter(f => isFlagFound(lab.id, f.flagKey)).length
 
             return (
-              <Card key={lab.id} className="hover:shadow-md transition-all cursor-pointer group" onClick={() => { setSelectedLab(lab); handleTabSwitch('lab-detail') }}>
+              <Card
+                key={lab.id}
+                className="hover:shadow-md transition-all cursor-pointer group"
+                role="button"
+                tabIndex={0}
+                onClick={() => { setSelectedLab(lab); handleTabSwitch('lab-detail') }}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedLab(lab); handleTabSwitch('lab-detail') } }}
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-2">
@@ -1176,7 +1189,13 @@ export default function CyberLab() {
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleTabSwitch('home')}>
+            <div
+              className="flex items-center gap-3 cursor-pointer"
+              role="button"
+              tabIndex={0}
+              onClick={() => handleTabSwitch('home')}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTabSwitch('home') } }}
+            >
               <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-slate-900 dark:bg-slate-100">
                 <Shield className="w-5 h-5 text-cyan-400 dark:text-cyan-600" />
               </div>
@@ -1250,7 +1269,14 @@ export default function CyberLab() {
                     const foundCount = lab.flags.filter(f => isFlagFound(lab.id, f.flagKey)).length
                     const myProgress = getLabProgress(lab.id)
                     return (
-                      <Card key={lab.id} className="hover:shadow-md transition-all cursor-pointer group" onClick={() => { setSelectedLab(lab); handleTabSwitch('lab-detail') }}>
+                      <Card
+                        key={lab.id}
+                        className="hover:shadow-md transition-all cursor-pointer group"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => { setSelectedLab(lab); handleTabSwitch('lab-detail') }}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedLab(lab); handleTabSwitch('lab-detail') } }}
+                      >
                         <CardHeader className="pb-2">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <Badge variant="outline" className="font-mono text-xs">ЛР №{lab.number}</Badge>
