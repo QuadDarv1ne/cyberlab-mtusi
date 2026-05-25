@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Shield, Terminal, Target, Trophy, Users, BookOpen,
   ChevronRight, CheckCircle2, Clock, AlertCircle, Zap,
-  Search, Lock, Bug, Network, ArrowRight, Star, Flag,
+  Search, Bug, Network, ArrowRight, Star, Flag,
   BarChart3, GraduationCap, Lightbulb, Send, Menu, X,
   Moon, Sun, Award, Flame, Info, Code, Database,
   FileSearch
