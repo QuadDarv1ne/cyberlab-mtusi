@@ -1,28 +1,40 @@
 version: '3.8'
 
+# ==========================================
+# CyberLab MTUSI - Docker Compose
+# Supports: SQLite (default), PostgreSQL, MongoDB
+# ==========================================
+
 services:
+  # --- PostgreSQL ---
   postgres:
     image: postgres:17-alpine
     container_name: cyberlab-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: cyberlab
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-cyberlab}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 5s
       timeout: 3s
       retries: 5
+    networks:
+      - cyberlab-net
 
+  # --- MongoDB ---
   mongodb:
     image: mongo:8
     container_name: cyberlab-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-root}
     ports:
-      - "27017:27017"
+      - "${MONGODB_PORT:-27017}:27017"
     volumes:
       - mongodb_data:/data/db
     healthcheck:
@@ -30,7 +42,42 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    networks:
+      - cyberlab-net
 
+  # --- Application ---
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cyberlab-app
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL: ${DATABASE_URL:-file:./db/custom.db}
+      MONGODB_URI: ${MONGODB_URI:-mongodb://${MONGODB_USER:-root}:${MONGODB_PASSWORD:-root}@cyberlab-mongodb:27017/cyberlab?authSource=admin}
+      POSTGRES_URL: ${POSTGRES_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@cyberlab-postgres:5432/${POSTGRES_DB:-cyberlab}?schema=public}
+      PORT: ${PORT:-3000}
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    volumes:
+      - ./:/app
+      - sqlite_data:/app/db  # Для SQLite
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - cyberlab-net
+    command: sh -c "npm install && npm run dev"
+
+# --- Volumes ---
 volumes:
   postgres_data:
   mongodb_data:
+  sqlite_data:  # Для SQLite
+
+# --- Networks ---
+networks:
+  cyberlab-net:
+    driver: bridge
