@@ -1,8 +1,8 @@
 import { db } from '@/lib/db'
-import { NextResponse } from 'next/server'
+import { cachedJson, withErrorHandling } from '@/lib/api-helpers'
 
 export async function GET() {
-  try {
+  return withErrorHandling(async () => {
     const students = await db.student.findMany({
       select: {
         id: true,
@@ -12,11 +12,6 @@ export async function GET() {
       },
       orderBy: { name: 'asc' }
     })
-    const response = NextResponse.json(students)
-    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
-    return response
-  } catch (error) {
-    console.error('[API /students] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
+    return cachedJson(students, { maxAge: 60, staleWhileRevalidate: 300 })
+  }, 'GET /api/students')
 }

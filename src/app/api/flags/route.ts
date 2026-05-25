@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { withErrorHandling } from '@/lib/api-helpers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -30,28 +31,28 @@ function checkRateLimit(key: string, maxAttempts = 10, windowMs = 60_000): { all
 }
 
 export async function POST(req: Request) {
-  let body
-  try {
-    body = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
-  }
+  return withErrorHandling(async () => {
+    let body
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    }
 
-  const parsed = flagSubmissionSchema.safeParse(body)
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid request' }, { status: 400 })
-  }
+    const parsed = flagSubmissionSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid request' }, { status: 400 })
+    }
 
-  const { studentId, labId, flagKey, flagValue } = parsed.data
+    const { studentId, labId, flagKey, flagValue } = parsed.data
 
-  // Rate limiting: 10 attempts per minute per student+lab
-  const rateKey = `${studentId}:${labId}`
-  const rate = checkRateLimit(rateKey)
-  if (!rate.allowed) {
-    return NextResponse.json({ error: 'Слишком много попыток. Подождите минуту.' }, { status: 429 })
-  }
+    // Rate limiting: 10 attempts per minute per student+lab
+    const rateKey = `${studentId}:${labId}`
+    const rate = checkRateLimit(rateKey)
+    if (!rate.allowed) {
+      return NextResponse.json({ error: 'Слишком много попыток. Подождите минуту.' }, { status: 429 })
+    }
 
-  try {
     const result = await db.$transaction(async (tx) => {
       // Check if this flag was already submitted correctly by this student
       const existingCorrect = await tx.flagSubmission.findFirst({
@@ -143,8 +144,5 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json(result)
-  } catch (error) {
-    console.error('[API /flags POST] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
+  }, 'POST /api/flags')
 }

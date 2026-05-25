@@ -1,8 +1,9 @@
 import { db } from '@/lib/db'
+import { cachedJson, withErrorHandling } from '@/lib/api-helpers'
 import { NextResponse } from 'next/server'
 
 export async function GET(req: Request) {
-  try {
+  return withErrorHandling(async () => {
     const { searchParams } = new URL(req.url)
     const studentId = searchParams.get('studentId')
 
@@ -30,11 +31,6 @@ export async function GET(req: Request) {
       }
     })
 
-    const response = NextResponse.json({ found, progress })
-    response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60')
-    return response
-  } catch (error) {
-    console.error('[API /progress] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
+    return cachedJson({ found, progress }, { maxAge: 30, staleWhileRevalidate: 60 })
+  }, 'GET /api/progress')
 }

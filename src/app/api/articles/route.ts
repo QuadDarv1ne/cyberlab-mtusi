@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { cachedJson, withErrorHandling } from '@/lib/api-helpers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -14,70 +15,65 @@ const articleSchema = z.object({
 })
 
 export async function GET(req: Request) {
-  try {
-  const { searchParams } = new URL(req.url)
-  const category = searchParams.get('category')
-  const search = searchParams.get('search')
-  const page = parseInt(searchParams.get('page') || '1')
-  const limit = parseInt(searchParams.get('limit') || '9')
-  const slug = searchParams.get('slug')
+  return withErrorHandling(async () => {
+    const { searchParams } = new URL(req.url)
+    const category = searchParams.get('category')
+    const search = searchParams.get('search')
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '9')
+    const slug = searchParams.get('slug')
 
-  if (slug) {
-    const article = await db.article.findUnique({ where: { slug } })
-    if (!article) {
-      return NextResponse.json({ error: 'Article not found' }, { status: 404 })
+    if (slug) {
+      const article = await db.article.findUnique({ where: { slug } })
+      if (!article) {
+        return NextResponse.json({ error: 'Article not found' }, { status: 404 })
+      }
+      return NextResponse.json(article)
     }
-    return NextResponse.json(article)
-  }
 
-  const where: Record<string, unknown> = {}
-  if (category) {
-    where.category = category
-  }
-  if (search) {
-    where.OR = [
-      { title: { contains: search } },
-      { excerpt: { contains: search } },
-      { content: { contains: search } },
-    ]
-  }
+    const where: Record<string, unknown> = {}
+    if (category) {
+      where.category = category
+    }
+    if (search) {
+      where.OR = [
+        { title: { contains: search } },
+        { excerpt: { contains: search } },
+        { content: { contains: search } },
+      ]
+    }
 
-  const total = await db.article.count({ where })
-  const articles = await db.article.findMany({
-    where,
-    orderBy: { publishedAt: 'desc' },
-    skip: (page - 1) * limit,
-    take: limit,
-  })
+    const total = await db.article.count({ where })
+    const articles = await db.article.findMany({
+      where,
+      orderBy: { publishedAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    })
 
-  const response = NextResponse.json({
-    articles,
-    total,
-    page,
-    totalPages: Math.ceil(total / limit),
-  })
-  response.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=600')
-  return response
-  } catch (error) {
-    console.error('[API /articles GET] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
+    return cachedJson({
+      articles,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    }, { maxAge: 120, staleWhileRevalidate: 600 })
+  }, 'GET /api/articles')
 }
 
 export async function POST(req: Request) {
-  let body
-  try {
-    body = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
-  }
+  return withErrorHandling(async () => {
+    let body
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    }
 
-  const parsed = articleSchema.safeParse(body)
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid request' }, { status: 400 })
-  }
+    const parsed = articleSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid request' }, { status: 400 })
+    }
 
-  try {
     const existing = await db.article.findUnique({ where: { slug: parsed.data.slug } })
     if (existing) {
       return NextResponse.json({ error: 'Article with this slug already exists' }, { status: 409 })
@@ -85,8 +81,5 @@ export async function POST(req: Request) {
 
     const article = await db.article.create({ data: parsed.data })
     return NextResponse.json(article, { status: 201 })
-  } catch (error) {
-    console.error('[API /articles POST] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
+  }, 'POST /api/articles')
 }
