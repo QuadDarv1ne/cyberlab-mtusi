@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { cachedJson, withErrorHandling } from '@/lib/api-helpers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 
 const articleSchema = z.object({
   slug: z.string().min(1).regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
@@ -16,6 +17,16 @@ const articleSchema = z.object({
 
 export async function GET(req: Request) {
   return withErrorHandling(async () => {
+    // Rate limit: 60 requests per minute per IP for read-only articles
+    const clientIp = getClientIp(req)
+    const rate = checkRateLimit(`articles:${clientIp}`, { maxRequests: 60 })
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Слишком много запросов. Подождите.' },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfter) } }
+      )
+    }
+
     const { searchParams } = new URL(req.url)
     const category = searchParams.get('category')
     const search = searchParams.get('search')
@@ -67,6 +78,16 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   return withErrorHandling(async () => {
+    // Rate limit: 5 article creations per minute per IP
+    const clientIp = getClientIp(req)
+    const rate = checkRateLimit(`articles-post:${clientIp}`, { maxRequests: 5 })
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Слишком много попыток создания статей. Подождите.' },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfter) } }
+      )
+    }
+
     let body
     try {
       body = await req.json()
@@ -79,12 +100,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid request' }, { status: 400 })
     }
 
-    const existing = await db.article.findUnique({ where: { slug: parsed.data.slug } })
+    // Basic XSS sanitization - strip script tags and event handlers from content
+    const sanitizedData = {
+      ...parsed.data,
+      title: parsed.data.title.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ''),
+      excerpt: parsed.data.excerpt.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ''),
+      content: parsed.data.content
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/on\w+="[^"]*"/gi, ''),
+    }
+
+    const existing = await db.article.findUnique({ where: { slug: sanitizedData.slug } })
     if (existing) {
       return NextResponse.json({ error: 'Article with this slug already exists' }, { status: 409 })
     }
 
-    const article = await db.article.create({ data: parsed.data })
+    const article = await db.article.create({ data: sanitizedData })
     return NextResponse.json(article, { status: 201 })
   }, 'POST /api/articles')
 }

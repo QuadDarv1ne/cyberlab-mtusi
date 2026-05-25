@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { withErrorHandling } from '@/lib/api-helpers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 
 const flagSubmissionSchema = z.object({
   studentId: z.string().min(1, 'studentId is required'),
@@ -10,34 +11,20 @@ const flagSubmissionSchema = z.object({
   flagValue: z.string().min(1, 'flagValue is required').max(200, 'Flag value too long'),
 })
 
-// Simple in-memory rate limiter: 10 attempts per minute per student+lab
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-
-// Cleanup expired entries every 5 minutes to prevent memory leaks
-setInterval(() => {
-  const now = Date.now()
-  for (const [key, entry] of rateLimitMap) {
-    if (now > entry.resetAt) {
-      rateLimitMap.delete(key)
-    }
+/**
+ * Timing-safe string comparison to prevent timing oracle attacks.
+ * Compares two strings in constant time regardless of where they differ.
+ */
+function constantTimeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    // Still do a dummy comparison to maintain constant time
+    return false
   }
-}, 5 * 60 * 1000)
-
-function checkRateLimit(key: string, maxAttempts = 10, windowMs = 60_000): { allowed: boolean; remaining: number } {
-  const now = Date.now()
-  const entry = rateLimitMap.get(key)
-
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs })
-    return { allowed: true, remaining: maxAttempts - 1 }
+  let result = 0
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i)
   }
-
-  if (entry.count >= maxAttempts) {
-    return { allowed: false, remaining: 0 }
-  }
-
-  entry.count++
-  return { allowed: true, remaining: maxAttempts - entry.count }
+  return result === 0
 }
 
 export async function POST(req: Request) {
@@ -56,6 +43,19 @@ export async function POST(req: Request) {
 
     const { studentId, labId, flagKey, flagValue } = parsed.data
 
+    // Dual rate limiting: per IP (brute force) and per student+lab (fair use)
+    const clientIp = getClientIp(req)
+    const ipRate = checkRateLimit(`flags-ip:${clientIp}`, { maxRequests: 20 })
+    if (!ipRate.allowed) {
+      return NextResponse.json({ error: 'Слишком много попыток. Подождите минуту.' }, { status: 429 })
+    }
+
+    const rateKey = `flags:${studentId}:${labId}`
+    const rate = checkRateLimit(rateKey, { maxRequests: 10 })
+    if (!rate.allowed) {
+      return NextResponse.json({ error: 'Слишком много попыток. Подождите минуту.' }, { status: 429 })
+    }
+
     // Verify student exists
     const student = await db.student.findUnique({ where: { id: studentId } })
     if (!student) {
@@ -66,13 +66,6 @@ export async function POST(req: Request) {
     const lab = await db.lab.findUnique({ where: { id: labId } })
     if (!lab) {
       return NextResponse.json({ error: 'Лабораторная работа не найдена' }, { status: 404 })
-    }
-
-    // Rate limiting: 10 attempts per minute per student+lab
-    const rateKey = `${studentId}:${labId}`
-    const rate = checkRateLimit(rateKey)
-    if (!rate.allowed) {
-      return NextResponse.json({ error: 'Слишком много попыток. Подождите минуту.' }, { status: 429 })
     }
 
     const result = await db.$transaction(async (tx) => {
@@ -99,7 +92,7 @@ export async function POST(req: Request) {
         return { correct: false, message: 'Флаг не найден', notFound: true }
       }
 
-      const correct = flag.flagValue === flagValue
+      const correct = constantTimeCompare(flag.flagValue, flagValue)
 
       // Only record the first attempt and the correct submission (not repeated wrong guesses)
       const previousAttempts = await tx.flagSubmission.findMany({
