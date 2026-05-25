@@ -1085,20 +1085,16 @@ export default function CyberLab() {
                 </div>
               </div>
               <Separator />
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-1 gap-3 text-sm">
                 <div>
                   <div className="text-muted-foreground mb-1">Университет</div>
                   <div className="font-medium">МТУСИ</div>
                 </div>
                 <div>
-                  <div className="text-muted-foreground mb-1">Группа</div>
-                  <div className="font-medium">УБВТ2404</div>
-                </div>
-                <div className="col-span-2">
                   <div className="text-muted-foreground mb-1">Дисциплина</div>
                   <div className="font-medium">Защита информации от вредоносного ПО</div>
                 </div>
-                <div className="col-span-2">
+                <div>
                   <div className="text-muted-foreground mb-1">Кафедра</div>
                   <div className="font-medium">Информационной безопасности</div>
                 </div>
@@ -1298,7 +1294,7 @@ export default function CyberLab() {
               <span>CyberLab — МТУСИ, Кафедра информационной безопасности</span>
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
-              <span className="font-medium">Дуплей Максим Игоревич · УБВТ2404</span>
+              <span className="font-medium">Дуплей Максим Игоревич</span>
               <span className="hidden sm:inline">·</span>
               <span>Защита информации от вредоносного ПО · 2026</span>
             </div>
