@@ -3,7 +3,7 @@ import { cachedJson, withErrorHandling } from '@/lib/api-helpers'
 
 export async function GET() {
   return withErrorHandling(async () => {
-    const labs = await db.lab.findMany({
+    const labs = await db.labFindMany({
       include: {
         flags: {
           select: {

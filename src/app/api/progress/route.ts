@@ -27,12 +27,12 @@ export async function GET(req: Request) {
       )
     }
 
-    const found = await db.flagSubmission.findMany({
+    const found = await db.flagSubmissionFindMany({
       where: { studentId, correct: true },
       select: { labId: true, flagKey: true }
     })
 
-    const progress = await db.labProgress.findMany({
+    const progress = await db.labProgressFindMany({
       where: { studentId },
       select: {
         labId: true,

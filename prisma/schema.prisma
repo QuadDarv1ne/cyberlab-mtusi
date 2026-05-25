@@ -2,8 +2,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Provider is set at generate time via PRISMA_PROVIDER env var
+// Supported: sqlite (default), postgresql
+// MongoDB uses native driver, not Prisma
 datasource db {
-  provider = "sqlite"
+  provider = env("PRISMA_PROVIDER")
   url      = env("DATABASE_URL")
 }
 

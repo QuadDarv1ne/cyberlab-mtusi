@@ -57,18 +57,18 @@ export async function POST(req: Request) {
     }
 
     // Verify student exists
-    const student = await db.student.findUnique({ where: { id: studentId } })
+    const student = await db.studentFindUnique({ where: { id: studentId } })
     if (!student) {
       return NextResponse.json({ error: 'Студент не найден' }, { status: 404 })
     }
 
     // Verify lab exists
-    const lab = await db.lab.findUnique({ where: { id: labId } })
+    const lab = await db.labFindUnique({ where: { id: labId } })
     if (!lab) {
       return NextResponse.json({ error: 'Лабораторная работа не найдена' }, { status: 404 })
     }
 
-    const result = await db.$transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
       // Check if this flag was already submitted correctly by this student
       const existingCorrect = await tx.flagSubmission.findFirst({
         where: { studentId, labId, flagKey, correct: true }

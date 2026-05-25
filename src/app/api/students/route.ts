@@ -15,7 +15,7 @@ export async function GET(req: Request) {
       )
     }
 
-    const students = await db.student.findMany({
+    const students = await db.studentFindMany({
       select: {
         id: true,
         name: true,

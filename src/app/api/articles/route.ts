@@ -40,7 +40,7 @@ export async function GET(req: Request) {
     const slug = searchParams.get('slug')
 
     if (slug) {
-      const article = await db.article.findUnique({ where: { slug } })
+      const article = await db.articleFindUnique({ where: { slug } })
       if (!article) {
         return NextResponse.json({ error: 'Article not found' }, { status: 404 })
       }
@@ -59,8 +59,8 @@ export async function GET(req: Request) {
       ]
     }
 
-    const total = await db.article.count({ where })
-    const articles = await db.article.findMany({
+    const total = await db.articleCount({ where })
+    const articles = await db.articleFindMany({
       where,
       orderBy: { publishedAt: 'desc' },
       skip: (page - 1) * limit,
@@ -110,12 +110,12 @@ export async function POST(req: Request) {
         .replace(/on\w+="[^"]*"/gi, ''),
     }
 
-    const existing = await db.article.findUnique({ where: { slug: sanitizedData.slug } })
+    const existing = await db.articleFindUnique({ where: { slug: sanitizedData.slug } })
     if (existing) {
       return NextResponse.json({ error: 'Article with this slug already exists' }, { status: 409 })
     }
 
-    const article = await db.article.create({ data: sanitizedData })
+    const article = await db.articleCreate({ data: sanitizedData })
     return NextResponse.json(article, { status: 201 })
   }, 'POST /api/articles')
 }
