@@ -13,6 +13,16 @@ const flagSubmissionSchema = z.object({
 // Simple in-memory rate limiter: 10 attempts per minute per student+lab
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 
+// Cleanup expired entries every 5 minutes to prevent memory leaks
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, entry] of rateLimitMap) {
+    if (now > entry.resetAt) {
+      rateLimitMap.delete(key)
+    }
+  }
+}, 5 * 60 * 1000)
+
 function checkRateLimit(key: string, maxAttempts = 10, windowMs = 60_000): { allowed: boolean; remaining: number } {
   const now = Date.now()
   const entry = rateLimitMap.get(key)

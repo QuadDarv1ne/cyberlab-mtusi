@@ -102,6 +102,19 @@ interface ProgressRecord {
   score: number
 }
 
+interface BlogArticle {
+  id: string
+  slug: string
+  title: string
+  excerpt: string
+  content: string
+  author: string
+  category: string
+  tags: string
+  coverImage: string | null
+  publishedAt: string
+}
+
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
@@ -174,18 +187,6 @@ export default function CyberLab() {
   const [catalogCategoryFilter, setCatalogCategoryFilter] = useState<string>('all')
   const [catalogDifficultyFilter, setCatalogDifficultyFilter] = useState<string>('all')
   // Blog state
-  interface BlogArticle {
-    id: string
-    slug: string
-    title: string
-    excerpt: string
-    content: string
-    author: string
-    category: string
-    tags: string
-    coverImage: string | null
-    publishedAt: string
-  }
   const [articles, setArticles] = useState<BlogArticle[]>([])
   const [selectedArticle, setSelectedArticle] = useState<BlogArticle | null>(null)
   const [blogSearch, setBlogSearch] = useState('')
@@ -1457,11 +1458,18 @@ function StatCard({ icon, label, value, color, isPercentage }: {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Badge variant="secondary">{selectedArticle.category}</Badge>
-                          {selectedArticle.tags && JSON.parse(selectedArticle.tags).length > 0 &&
-                            JSON.parse(selectedArticle.tags).map((tag: string) => (
-                              <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
-                            ))
-                          }
+                          {(() => {
+                            try {
+                              const tags = selectedArticle.tags ? JSON.parse(selectedArticle.tags) : []
+                              return Array.isArray(tags) && tags.length > 0
+                                ? tags.map((tag: string) => (
+                                    <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
+                                  ))
+                                : null
+                            } catch {
+                              return null
+                            }
+                          })()}
                         </div>
                         <Button variant="ghost" size="icon" onClick={() => setSelectedArticle(null)}>
                           <X className="w-4 h-4" />

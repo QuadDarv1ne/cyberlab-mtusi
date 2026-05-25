@@ -31,9 +31,12 @@ export async function GET() {
 
     const recentSubmissions = submissions.map((s) => ({
       id: s.id,
+      studentId: s.studentId,
+      labId: s.labId,
       studentName: s.student.name,
       labTitle: s.lab.title,
       flagKey: s.flagKey,
+      flagValue: s.flagValue,
       correct: s.correct,
       createdAt: s.createdAt,
     }))
