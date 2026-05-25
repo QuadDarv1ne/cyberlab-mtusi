@@ -36,7 +36,6 @@ export async function GET() {
       studentName: s.student.name,
       labTitle: s.lab.title,
       flagKey: s.flagKey,
-      flagValue: s.flagValue,
       correct: s.correct,
       createdAt: s.createdAt,
     }))

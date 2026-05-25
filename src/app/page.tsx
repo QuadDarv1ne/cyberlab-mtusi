@@ -74,7 +74,6 @@ interface RecentSubmission {
   studentId: string
   labId: string
   flagKey: string
-  flagValue: string
   correct: boolean
   createdAt: string
 }
@@ -1228,8 +1227,11 @@ function AboutPage() {
                             {lab ? `ЛР №${lab.number}` : '—'}
                           </span>
                         </div>
-                        <div className="text-xs text-muted-foreground mt-0.5 font-mono truncate">
-                          {sub.flagKey}: {sub.flagValue}
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                          <code className="font-mono truncate">{sub.flagKey}</code>
+                          <Badge variant={sub.correct ? "default" : "destructive"} className="text-[10px] px-1 py-0 h-4">
+                            {sub.correct ? "OK" : "ERR"}
+                          </Badge>
                         </div>
                       </div>
                       <div className="text-xs text-muted-foreground shrink-0">
