@@ -12,7 +12,9 @@ export async function GET() {
       },
       orderBy: { name: 'asc' }
     })
-    return NextResponse.json(students)
+    const response = NextResponse.json(students)
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+    return response
   } catch (error) {
     console.error('[API /students] Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

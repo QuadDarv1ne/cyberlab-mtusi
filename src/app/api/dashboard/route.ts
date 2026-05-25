@@ -87,7 +87,7 @@ export async function GET() {
     }
   })
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     studentStats,
     labStats,
     recentSubmissions,
@@ -96,6 +96,8 @@ export async function GET() {
     totalStudents: students.length,
     totalLabs: labs.length,
   })
+  response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120')
+  return response
   } catch (error) {
     console.error('[API /dashboard] Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

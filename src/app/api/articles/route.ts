@@ -50,12 +50,14 @@ export async function GET(req: Request) {
     take: limit,
   })
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     articles,
     total,
     page,
     totalPages: Math.ceil(total / limit),
   })
+  response.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=600')
+  return response
   } catch (error) {
     console.error('[API /articles GET] Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -75,11 +77,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid request' }, { status: 400 })
   }
 
-  const existing = await db.article.findUnique({ where: { slug: parsed.data.slug } })
-  if (existing) {
-    return NextResponse.json({ error: 'Article with this slug already exists' }, { status: 409 })
-  }
+  try {
+    const existing = await db.article.findUnique({ where: { slug: parsed.data.slug } })
+    if (existing) {
+      return NextResponse.json({ error: 'Article with this slug already exists' }, { status: 409 })
+    }
 
-  const article = await db.article.create({ data: parsed.data })
-  return NextResponse.json(article, { status: 201 })
+    const article = await db.article.create({ data: parsed.data })
+    return NextResponse.json(article, { status: 201 })
+  } catch (error) {
+    console.error('[API /articles POST] Error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }

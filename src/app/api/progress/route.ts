@@ -30,7 +30,9 @@ export async function GET(req: Request) {
       }
     })
 
-    return NextResponse.json({ found, progress })
+    const response = NextResponse.json({ found, progress })
+    response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60')
+    return response
   } catch (error) {
     console.error('[API /progress] Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

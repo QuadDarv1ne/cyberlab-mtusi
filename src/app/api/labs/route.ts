@@ -7,7 +7,9 @@ export async function GET() {
       include: { flags: { select: { id: true, flagKey: true, points: true, hint: true } } },
       orderBy: { order: 'asc' }
     })
-    return NextResponse.json(labs)
+    const response = NextResponse.json(labs)
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+    return response
   } catch (error) {
     console.error('[API /labs] Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
