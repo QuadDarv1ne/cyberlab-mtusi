@@ -193,8 +193,6 @@ export default function CyberLab() {
   const [blogLoading, setBlogLoading] = useState(false)
   const [blogPage, setBlogPage] = useState(1)
   const [blogTotalPages, setBlogTotalPages] = useState(1)
-  // Animation key for tab transitions
-  const [animKey, setAnimKey] = useState(0)
   const statsRef = useRef<HTMLDivElement>(null)
 
   // Dark mode: persist to localStorage and read initial value
@@ -214,10 +212,9 @@ export default function CyberLab() {
 
   const selectedStudent = students[selectedStudentIdx] || null
 
-  // Tab switch handler with animation
+  // Tab switch handler
   const handleTabSwitch = (tabId: string) => {
     setActiveTab(tabId)
-    setAnimKey(prev => prev + 1)
   }
 
   // Stats intersection observer for entrance animation
@@ -407,85 +404,48 @@ export default function CyberLab() {
   }
 
 /* ------------------------------------------------------------------ */
-/*  Sub-components (must be at module level per React rules)           */
+/*  Extracted Sub-components (module level for stable React identity)  */
 /* ------------------------------------------------------------------ */
 
-function HeroSection({ onNavigate }: { onNavigate: (tab: string) => void }) {
-  return (
-    <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-500 rounded-full blur-[128px] -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500 rounded-full blur-[128px] translate-x-1/2 translate-y-1/2" />
-      </div>
-      <div className="relative z-10 px-6 py-16 md:px-12 md:py-24">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-500/30">
-            <Shield className="w-6 h-6 text-cyan-400" />
-          </div>
-          <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/30">МТУСИ · Кафедра ИБ</Badge>
-        </div>
-        <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4">
-          Cyber<span className="text-cyan-400">Lab</span>
-        </h1>
-        <p className="text-lg md:text-xl text-slate-300 max-w-2xl mb-8">
-          Образовательная платформа для проведения лабораторных работ по информационной безопасности.
-          Практикуйтесь в реальных сценариях кибератак и защите от них.
-        </p>
-        <div className="flex flex-wrap gap-4">
-          <Button size="lg" className="bg-cyan-500 hover:bg-cyan-600 text-white gap-2" onClick={() => onNavigate('labs')}>
-            <Terminal className="w-5 h-5" /> Начать работу
-          </Button>
-          <Button size="lg" variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 gap-2" onClick={() => onNavigate('dashboard')}>
-            <BarChart3 className="w-5 h-5" /> Дашборд
-          </Button>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function StatsSection({
+function LabCatalog({
+  filteredLabs,
+  labs,
   dashboard,
-  selectedStudent,
-  statsRef,
+  getLabProgress,
+  isFlagFound,
+  setSelectedLab,
+  handleTabSwitch,
+  catalogSearch,
+  setCatalogSearch,
+  catalogCategoryFilter,
+  setCatalogCategoryFilter,
+  catalogDifficultyFilter,
+  setCatalogDifficultyFilter,
 }: {
+  filteredLabs: Lab[]
+  labs: Lab[]
   dashboard: DashboardData | null
-  selectedStudent: StudentDb | null
-  statsRef: React.RefObject<HTMLDivElement | null>
+  getLabProgress: (labId: string) => ProgressRecord | undefined
+  isFlagFound: (labId: string, flagKey: string) => boolean
+  setSelectedLab: (lab: Lab) => void
+  handleTabSwitch: (tab: string) => void
+  catalogSearch: string
+  setCatalogSearch: (v: string) => void
+  catalogCategoryFilter: string
+  setCatalogCategoryFilter: (v: string) => void
+  catalogDifficultyFilter: string
+  setCatalogDifficultyFilter: (v: string) => void
 }) {
-  const currentStat = dashboard?.studentStats.find(s => s.id === selectedStudent?.id)
-  const accuracyValue = dashboard ? Math.round((dashboard.correctSubmissions / Math.max(dashboard.totalSubmissions, 1)) * 100) : 0
-  return (
-    <div ref={statsRef} className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <StatCard icon={<BookOpen className="w-5 h-5" />} label="Лабораторных" value={dashboard?.totalLabs ?? 5} color="text-cyan-500" />
-      <StatCard icon={<Flame className="w-5 h-5" />} label="Ваши баллы" value={currentStat?.totalScore ?? 0} color="text-orange-500" />
-      <StatCard icon={<Flag className="w-5 h-5" />} label="Флагов найдено" value={dashboard?.correctSubmissions ?? 0} color="text-emerald-500" />
-      <StatCard icon={<Target className="w-5 h-5" />} label="Точность" value={accuracyValue} color="text-amber-500" isPercentage />
-    </div>
-  )
-}
+  const CategoryBadge = ({ category }: { category: string }) => {
+    const meta = CATEGORY_META[category] || CATEGORY_META.reconnaissance
+    return (<Badge variant="outline" className={`${meta.color} gap-1`}>{meta.icon}{meta.label}</Badge>)
+  }
+  const DifficultyBadge = ({ level }: { level: string }) => {
+    const meta = DIFFICULTY_META[level] || DIFFICULTY_META.medium
+    return (<Badge variant="outline" className={`${meta.color} gap-1`}>{Array.from({ length: meta.stars }).map((_, i) => <Star key={i} className="w-3 h-3 fill-current" />)}{meta.label}</Badge>)
+  }
 
-function StatCard({ icon, label, value, color, isPercentage }: {
-  icon: React.ReactNode; label: string; value: number; color: string; isPercentage?: boolean
-}) {
-  const count = useCountUp(value, 1000, true)
   return (
-    <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-500">
-      <CardContent className="p-4 md:p-6">
-        <div className={`inline-flex items-center justify-center w-10 h-10 rounded-lg bg-muted mb-3 ${color}`}>
-          {icon}
-        </div>
-        <div className="text-2xl md:text-3xl font-bold">
-          {isPercentage ? `${count}%` : count}
-        </div>
-        <div className="text-sm text-muted-foreground">{label}</div>
-      </CardContent>
-    </Card>
-  )
-}
-
-  /* ---- LAB CARDS (catalog with search and filters) ---- */
-  const LabCatalog = () => (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-2xl font-bold">Каталог лабораторных работ</h2>
@@ -615,6 +575,238 @@ function StatCard({ icon, label, value, color, isPercentage }: {
       )}
     </div>
   )
+}
+
+function HeroSection({ onNavigate }: { onNavigate: (tab: string) => void }) {
+  return (
+    <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-500 rounded-full blur-[128px] -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500 rounded-full blur-[128px] translate-x-1/2 translate-y-1/2" />
+      </div>
+      <div className="relative z-10 px-6 py-16 md:px-12 md:py-24">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-500/30">
+            <Shield className="w-6 h-6 text-cyan-400" />
+          </div>
+          <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/30">МТУСИ · Кафедра ИБ</Badge>
+        </div>
+        <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4">
+          Cyber<span className="text-cyan-400">Lab</span>
+        </h1>
+        <p className="text-lg md:text-xl text-slate-300 max-w-2xl mb-8">
+          Образовательная платформа для проведения лабораторных работ по информационной безопасности.
+          Практикуйтесь в реальных сценариях кибератак и защите от них.
+        </p>
+        <div className="flex flex-wrap gap-4">
+          <Button size="lg" className="bg-cyan-500 hover:bg-cyan-600 text-white gap-2" onClick={() => onNavigate('labs')}>
+            <Terminal className="w-5 h-5" /> Начать работу
+          </Button>
+          <Button size="lg" variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 gap-2" onClick={() => onNavigate('dashboard')}>
+            <BarChart3 className="w-5 h-5" /> Дашборд
+          </Button>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function StatsSection({
+  dashboard,
+  selectedStudent,
+  statsRef,
+}: {
+  dashboard: DashboardData | null
+  selectedStudent: StudentDb | null
+  statsRef: React.RefObject<HTMLDivElement | null>
+}) {
+  const currentStat = dashboard?.studentStats.find(s => s.id === selectedStudent?.id)
+  const accuracyValue = dashboard ? Math.round((dashboard.correctSubmissions / Math.max(dashboard.totalSubmissions, 1)) * 100) : 0
+  return (
+    <div ref={statsRef} className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <StatCard icon={<BookOpen className="w-5 h-5" />} label="Лабораторных" value={dashboard?.totalLabs ?? 5} color="text-cyan-500" />
+      <StatCard icon={<Flame className="w-5 h-5" />} label="Ваши баллы" value={currentStat?.totalScore ?? 0} color="text-orange-500" />
+      <StatCard icon={<Flag className="w-5 h-5" />} label="Флагов найдено" value={dashboard?.correctSubmissions ?? 0} color="text-emerald-500" />
+      <StatCard icon={<Target className="w-5 h-5" />} label="Точность" value={accuracyValue} color="text-amber-500" isPercentage />
+    </div>
+  )
+}
+
+function StatCard({ icon, label, value, color, isPercentage }: {
+  icon: React.ReactNode; label: string; value: number; color: string; isPercentage?: boolean
+}) {
+  const count = useCountUp(value, 1000, true)
+  return (
+    <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-500">
+      <CardContent className="p-4 md:p-6">
+        <div className={`inline-flex items-center justify-center w-10 h-10 rounded-lg bg-muted mb-3 ${color}`}>
+          {icon}
+        </div>
+        <div className="text-2xl md:text-3xl font-bold">
+          {isPercentage ? `${count}%` : count}
+        </div>
+        <div className="text-sm text-muted-foreground">{label}</div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function ToolsReference() {
+  const tools = [
+    { name: 'Spiderfoot', category: 'OSINT', desc: 'Автоматизированный сбор информации о доменах, IP-адресах, поддоменах и связях между объектами.', color: 'bg-cyan-500' },
+    { name: 'Maltego Graph', category: 'OSINT', desc: 'Визуальная платформа для сбора и анализа информации с построением графов связей.', color: 'bg-cyan-500' },
+    { name: 'Nmap / Zenmap', category: 'Сканирование', desc: 'Сетевой сканер для обнаружения хостов, открытых портов и определения сервисов.', color: 'bg-purple-500' },
+    { name: 'Metasploit', category: 'Эксплуатация', desc: 'Фреймворк для разработки и выполнения эксплоитов против удалённых целей.', color: 'bg-red-500' },
+    { name: 'OWASP ZAP', category: 'Аудит', desc: 'Автоматизированный сканер уязвимостей веб-приложений и API.', color: 'bg-amber-500' },
+    { name: 'Probely', category: 'Аудит', desc: 'Облачная платформа для тестирования безопасности веб-приложений.', color: 'bg-amber-500' },
+    { name: 'Bettercap', category: 'Сетевые атаки', desc: 'Мощный фреймворк для проведения ARP/DNS-spoofing и сниффинга трафика.', color: 'bg-rose-500' },
+    { name: 'Docker', category: 'Инфраструктура', desc: 'Контейнеризация для развёртывания уязвимых машин и тестовых сред.', color: 'bg-emerald-500' },
+    { name: 'VMware Workstation', category: 'Виртуализация', desc: 'Создание виртуальных сетей с изолированными машинами для безопасного тестирования.', color: 'bg-emerald-500' },
+    { name: 'Exploit-DB', category: 'Справочник', desc: 'База данных известных уязвимостей и готовых эксплоитов.', color: 'bg-indigo-500' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold">Справочник инструментов</h2>
+      <p className="text-muted-foreground">Программное обеспечение, используемое в лабораторных работах курса.</p>
+      <div className="grid md:grid-cols-2 gap-4">
+        {tools.map(tool => (
+          <Card key={tool.name} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3">
+                <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${tool.color}`} />
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">{tool.name}</span>
+                    <Badge variant="secondary" className="text-xs">{tool.category}</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{tool.desc}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function AboutPage() {
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold">О проекте</h2>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-cyan-500" /> CyberLab
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-muted-foreground leading-relaxed">
+              <strong>CyberLab</strong> — образовательная платформа для проведения лабораторных работ по информационной безопасности.
+              Платформа позволяет студентам практиковаться в реальных сценариях кибератак и защиты от них в безопасной среде.
+            </p>
+            <p className="text-muted-foreground leading-relaxed">
+              Каждая лабораторная работа содержит набор заданий в формате CTF (Capture The Flag), где необходимо найти
+              флаги в формате <code className="px-1 py-0.5 bg-muted rounded font-mono text-sm">CYBER{'{...}'}</code>,
+              выполняя различные задачи по кибербезопасности.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <GraduationCap className="w-5 h-5 text-emerald-500" /> Разработчик
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-cyan-500/10">
+                  <Users className="w-5 h-5 text-cyan-600" />
+                </div>
+                <div>
+                  <div className="font-semibold">Дуплей Максим Игоревич</div>
+                  <div className="text-sm text-muted-foreground">Студент</div>
+                </div>
+              </div>
+              <Separator />
+              <div className="grid grid-cols-1 gap-3 text-sm">
+                <div>
+                  <div className="text-muted-foreground mb-1">Университет</div>
+                  <div className="font-medium">МТУСИ</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground mb-1">Дисциплина</div>
+                  <div className="font-medium">Защита информации от вредоносного ПО</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground mb-1">Кафедра</div>
+                  <div className="font-medium">Информационной безопасности</div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Code className="w-5 h-5 text-amber-500" /> Технологический стек
+          </CardTitle>
+          <CardDescription>Технологии, использованные при разработке платформы</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {[
+              { name: 'Next.js 16', desc: 'React-фреймворк', icon: '⚡' },
+              { name: 'React 19', desc: 'UI библиотека', icon: '⚛️' },
+              { name: 'TypeScript', desc: 'Типизированный JS', icon: '📘' },
+              { name: 'Tailwind CSS 4', desc: 'Утилитарный CSS', icon: '🎨' },
+              { name: 'shadcn/ui', desc: 'Компоненты', icon: '🧩' },
+              { name: 'Prisma ORM', desc: 'ORM для БД', icon: <Database className="w-4 h-4" /> },
+              { name: 'SQLite', desc: 'База данных', icon: '🗄️' },
+              { name: 'Recharts', desc: 'Графики и диаграммы', icon: '📊' },
+              { name: 'Lucide Icons', desc: 'Иконки', icon: '✨' },
+            ].map(tech => (
+              <div key={tech.name} className="flex items-start gap-2.5 p-3 rounded-lg bg-muted/50 border">
+                <span className="text-lg shrink-0 mt-0.5">{tech.icon}</span>
+                <div>
+                  <div className="font-medium text-sm">{tech.name}</div>
+                  <div className="text-xs text-muted-foreground">{tech.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white border-0">
+        <CardContent className="p-6 md:p-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-cyan-500/20 border border-cyan-500/30">
+              <Shield className="w-5 h-5 text-cyan-400" />
+            </div>
+            <h3 className="text-lg font-bold">CyberLab · МТУСИ</h3>
+          </div>
+          <p className="text-slate-300 leading-relaxed max-w-2xl">
+            Платформа разработана в учебных целях для освоения практических навыков в области информационной безопасности.
+            Все сценарии атак выполняются в изолированной среде и предназначены исключительно для образовательных целей.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">Образование</Badge>
+            <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30">Кибербезопасность</Badge>
+            <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30">CTF</Badge>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
 
   /* ---- LAB DETAIL ---- */
   const LabDetail = () => {
@@ -1082,163 +1274,6 @@ function StatCard({ icon, label, value, color, isPercentage }: {
     )
   }
 
-  /* ---- TOOLS REFERENCE ---- */
-  const ToolsReference = () => {
-    const tools = [
-      { name: 'Spiderfoot', category: 'OSINT', desc: 'Автоматизированный сбор информации о доменах, IP-адресах, поддоменах и связях между объектами.', color: 'bg-cyan-500' },
-      { name: 'Maltego Graph', category: 'OSINT', desc: 'Визуальная платформа для сбора и анализа информации с построением графов связей.', color: 'bg-cyan-500' },
-      { name: 'Nmap / Zenmap', category: 'Сканирование', desc: 'Сетевой сканер для обнаружения хостов, открытых портов и определения сервисов.', color: 'bg-purple-500' },
-      { name: 'Metasploit', category: 'Эксплуатация', desc: 'Фреймворк для разработки и выполнения эксплоитов против удалённых целей.', color: 'bg-red-500' },
-      { name: 'OWASP ZAP', category: 'Аудит', desc: 'Автоматизированный сканер уязвимостей веб-приложений и API.', color: 'bg-amber-500' },
-      { name: 'Probely', category: 'Аудит', desc: 'Облачная платформа для тестирования безопасности веб-приложений.', color: 'bg-amber-500' },
-      { name: 'Bettercap', category: 'Сетевые атаки', desc: 'Мощный фреймворк для проведения ARP/DNS-spoofing и сниффинга трафика.', color: 'bg-rose-500' },
-      { name: 'Docker', category: 'Инфраструктура', desc: 'Контейнеризация для развёртывания уязвимых машин и тестовых сред.', color: 'bg-emerald-500' },
-      { name: 'VMware Workstation', category: 'Виртуализация', desc: 'Создание виртуальных сетей с изолированными машинами для безопасного тестирования.', color: 'bg-emerald-500' },
-      { name: 'Exploit-DB', category: 'Справочник', desc: 'База данных известных уязвимостей и готовых эксплоитов.', color: 'bg-indigo-500' },
-    ]
-
-    return (
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold">Справочник инструментов</h2>
-        <p className="text-muted-foreground">Программное обеспечение, используемое в лабораторных работах курса.</p>
-        <div className="grid md:grid-cols-2 gap-4">
-          {tools.map(tool => (
-            <Card key={tool.name} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-5">
-                <div className="flex items-start gap-3">
-                  <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${tool.color}`} />
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{tool.name}</span>
-                      <Badge variant="secondary" className="text-xs">{tool.category}</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{tool.desc}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  /* ---- ABOUT PAGE ---- */
-  const AboutPage = () => (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">О проекте</h2>
-
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-cyan-500" /> CyberLab
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-muted-foreground leading-relaxed">
-              <strong>CyberLab</strong> — образовательная платформа для проведения лабораторных работ по информационной безопасности.
-              Платформа позволяет студентам практиковаться в реальных сценариях кибератак и защиты от них в безопасной среде.
-            </p>
-            <p className="text-muted-foreground leading-relaxed">
-              Каждая лабораторная работа содержит набор заданий в формате CTF (Capture The Flag), где необходимо найти
-              флаги в формате <code className="px-1 py-0.5 bg-muted rounded font-mono text-sm">CYBER{'{...}'}</code>,
-              выполняя различные задачи по кибербезопасности.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <GraduationCap className="w-5 h-5 text-emerald-500" /> Разработчик
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-cyan-500/10">
-                  <Users className="w-5 h-5 text-cyan-600" />
-                </div>
-                <div>
-                  <div className="font-semibold">Дуплей Максим Игоревич</div>
-                  <div className="text-sm text-muted-foreground">Студент</div>
-                </div>
-              </div>
-              <Separator />
-              <div className="grid grid-cols-1 gap-3 text-sm">
-                <div>
-                  <div className="text-muted-foreground mb-1">Университет</div>
-                  <div className="font-medium">МТУСИ</div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground mb-1">Дисциплина</div>
-                  <div className="font-medium">Защита информации от вредоносного ПО</div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground mb-1">Кафедра</div>
-                  <div className="font-medium">Информационной безопасности</div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Code className="w-5 h-5 text-amber-500" /> Технологический стек
-          </CardTitle>
-          <CardDescription>Технологии, использованные при разработке платформы</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {[
-              { name: 'Next.js 16', desc: 'React-фреймворк', icon: '⚡' },
-              { name: 'React 19', desc: 'UI библиотека', icon: '⚛️' },
-              { name: 'TypeScript', desc: 'Типизированный JS', icon: '📘' },
-              { name: 'Tailwind CSS 4', desc: 'Утилитарный CSS', icon: '🎨' },
-              { name: 'shadcn/ui', desc: 'Компоненты', icon: '🧩' },
-              { name: 'Prisma ORM', desc: 'ORM для БД', icon: <Database className="w-4 h-4" /> },
-              { name: 'SQLite', desc: 'База данных', icon: '🗄️' },
-              { name: 'Recharts', desc: 'Графики и диаграммы', icon: '📊' },
-              { name: 'Lucide Icons', desc: 'Иконки', icon: '✨' },
-            ].map(tech => (
-              <div key={tech.name} className="flex items-start gap-2.5 p-3 rounded-lg bg-muted/50 border">
-                <span className="text-lg shrink-0 mt-0.5">{tech.icon}</span>
-                <div>
-                  <div className="font-medium text-sm">{tech.name}</div>
-                  <div className="text-xs text-muted-foreground">{tech.desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white border-0">
-        <CardContent className="p-6 md:p-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-cyan-500/20 border border-cyan-500/30">
-              <Shield className="w-5 h-5 text-cyan-400" />
-            </div>
-            <h3 className="text-lg font-bold">CyberLab · МТУСИ</h3>
-          </div>
-          <p className="text-slate-300 leading-relaxed max-w-2xl">
-            Платформа разработана в учебных целях для освоения практических навыков в области информационной безопасности.
-            Все сценарии атак выполняются в изолированной среде и предназначены исключительно для образовательных целей.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">Образование</Badge>
-            <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30">Кибербезопасность</Badge>
-            <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30">CTF</Badge>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
-
   /* ---- MAIN LAYOUT ---- */
   if (loading) {
     return (
@@ -1321,7 +1356,7 @@ function StatCard({ icon, label, value, color, isPercentage }: {
 
       {/* Main */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 md:px-6 py-8">
-        <div key={animKey} className="animate-fade-in">
+        <div className="animate-fade-in">
           {activeTab === 'home' && (
             <div className="space-y-8">
               <HeroSection onNavigate={handleTabSwitch} />
@@ -1371,7 +1406,23 @@ function StatCard({ icon, label, value, color, isPercentage }: {
             </div>
           )}
 
-          {activeTab === 'labs' && <LabCatalog />}
+          {activeTab === 'labs' && (
+            <LabCatalog
+              filteredLabs={filteredLabs}
+              labs={labs}
+              dashboard={dashboard}
+              getLabProgress={getLabProgress}
+              isFlagFound={isFlagFound}
+              setSelectedLab={setSelectedLab}
+              handleTabSwitch={handleTabSwitch}
+              catalogSearch={catalogSearch}
+              setCatalogSearch={setCatalogSearch}
+              catalogCategoryFilter={catalogCategoryFilter}
+              setCatalogCategoryFilter={setCatalogCategoryFilter}
+              catalogDifficultyFilter={catalogDifficultyFilter}
+              setCatalogDifficultyFilter={setCatalogDifficultyFilter}
+            />
+          )}
           {activeTab === 'lab-detail' && <LabDetail />}
           {activeTab === 'dashboard' && <DashboardView />}
           {activeTab === 'tools' && <ToolsReference />}
