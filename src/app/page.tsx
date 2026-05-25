@@ -143,7 +143,8 @@ function useCountUp(end: number, duration: number = 800, visible: boolean = true
         setCount(Math.floor(start))
       }
     }, 16)
-    return () => clearInterval(timer)
+    // eslint-disable-next-line consistent-return
+    return (): void => { clearInterval(timer) }
   }, [end, duration, visible])
   return count
 }
@@ -194,8 +195,6 @@ export default function CyberLab() {
   const [blogTotalPages, setBlogTotalPages] = useState(1)
   // Animation key for tab transitions
   const [animKey, setAnimKey] = useState(0)
-  // Stats animation
-  const [statsVisible, setStatsVisible] = useState(false)
   const statsRef = useRef<HTMLDivElement>(null)
 
   // Dark mode: persist to localStorage and read initial value
@@ -227,14 +226,14 @@ export default function CyberLab() {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setStatsVisible(true)
           observer.disconnect()
         }
       },
       { threshold: 0.2 }
     )
     observer.observe(statsRef.current)
-    return () => observer.disconnect()
+    // eslint-disable-next-line consistent-return
+    return (): void => { observer.disconnect() }
   }, [loading])
 
   const fetchLabs = useCallback(async () => {
@@ -393,8 +392,12 @@ export default function CyberLab() {
     )
   }
 
-  /* ---- HERO ---- */
-  const HeroSection = () => (
+/* ------------------------------------------------------------------ */
+/*  Sub-components (must be at module level per React rules)           */
+/* ------------------------------------------------------------------ */
+
+function HeroSection({ onNavigate }: { onNavigate: (tab: string) => void }) {
+  return (
     <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
       <div className="absolute inset-0 opacity-20">
         <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-500 rounded-full blur-[128px] -translate-x-1/2 -translate-y-1/2" />
@@ -415,49 +418,57 @@ export default function CyberLab() {
           Практикуйтесь в реальных сценариях кибератак и защите от них.
         </p>
         <div className="flex flex-wrap gap-4">
-          <Button size="lg" className="bg-cyan-500 hover:bg-cyan-600 text-white gap-2" onClick={() => handleTabSwitch('labs')}>
+          <Button size="lg" className="bg-cyan-500 hover:bg-cyan-600 text-white gap-2" onClick={() => onNavigate('labs')}>
             <Terminal className="w-5 h-5" /> Начать работу
           </Button>
-          <Button size="lg" variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 gap-2" onClick={() => handleTabSwitch('dashboard')}>
+          <Button size="lg" variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 gap-2" onClick={() => onNavigate('dashboard')}>
             <BarChart3 className="w-5 h-5" /> Дашборд
           </Button>
         </div>
       </div>
     </section>
   )
+}
 
-  /* ---- STATS CARDS with count-up animation ---- */
-  const StatCard = ({ icon, label, value, color, isPercentage }: {
-    icon: React.ReactNode; label: string; value: number; color: string; isPercentage?: boolean
-  }) => {
-    const count = useCountUp(value, 1000, statsVisible)
-    return (
-      <Card className={`border-0 shadow-sm hover:shadow-md transition-all duration-500 ${statsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <CardContent className="p-4 md:p-6">
-          <div className={`inline-flex items-center justify-center w-10 h-10 rounded-lg bg-muted mb-3 ${color}`}>
-            {icon}
-          </div>
-          <div className="text-2xl md:text-3xl font-bold">
-            {isPercentage ? `${count}%` : count}
-          </div>
-          <div className="text-sm text-muted-foreground">{label}</div>
-        </CardContent>
-      </Card>
-    )
-  }
+function StatsSection({
+  dashboard,
+  selectedStudent,
+  statsRef,
+}: {
+  dashboard: DashboardData | null
+  selectedStudent: StudentDb | null
+  statsRef: React.RefObject<HTMLDivElement | null>
+}) {
+  const currentStat = dashboard?.studentStats.find(s => s.id === selectedStudent?.id)
+  const accuracyValue = dashboard ? Math.round((dashboard.correctSubmissions / Math.max(dashboard.totalSubmissions, 1)) * 100) : 0
+  return (
+    <div ref={statsRef} className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <StatCard icon={<BookOpen className="w-5 h-5" />} label="Лабораторных" value={dashboard?.totalLabs ?? 5} color="text-cyan-500" />
+      <StatCard icon={<Flame className="w-5 h-5" />} label="Ваши баллы" value={currentStat?.totalScore ?? 0} color="text-orange-500" />
+      <StatCard icon={<Flag className="w-5 h-5" />} label="Флагов найдено" value={dashboard?.correctSubmissions ?? 0} color="text-emerald-500" />
+      <StatCard icon={<Target className="w-5 h-5" />} label="Точность" value={accuracyValue} color="text-amber-500" isPercentage />
+    </div>
+  )
+}
 
-  const StatsSection = () => {
-    const currentStat = dashboard?.studentStats.find(s => s.id === selectedStudent?.id)
-    const accuracyValue = dashboard ? Math.round((dashboard.correctSubmissions / Math.max(dashboard.totalSubmissions, 1)) * 100) : 0
-    return (
-      <div ref={statsRef} className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard icon={<BookOpen className="w-5 h-5" />} label="Лабораторных" value={dashboard?.totalLabs ?? 5} color="text-cyan-500" />
-        <StatCard icon={<Flame className="w-5 h-5" />} label="Ваши баллы" value={currentStat?.totalScore ?? 0} color="text-orange-500" />
-        <StatCard icon={<Flag className="w-5 h-5" />} label="Флагов найдено" value={dashboard?.correctSubmissions ?? 0} color="text-emerald-500" />
-        <StatCard icon={<Target className="w-5 h-5" />} label="Точность" value={accuracyValue} color="text-amber-500" isPercentage />
-      </div>
-    )
-  }
+function StatCard({ icon, label, value, color, isPercentage }: {
+  icon: React.ReactNode; label: string; value: number; color: string; isPercentage?: boolean
+}) {
+  const count = useCountUp(value, 1000, true)
+  return (
+    <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-500">
+      <CardContent className="p-4 md:p-6">
+        <div className={`inline-flex items-center justify-center w-10 h-10 rounded-lg bg-muted mb-3 ${color}`}>
+          {icon}
+        </div>
+        <div className="text-2xl md:text-3xl font-bold">
+          {isPercentage ? `${count}%` : count}
+        </div>
+        <div className="text-sm text-muted-foreground">{label}</div>
+      </CardContent>
+    </Card>
+  )
+}
 
   /* ---- LAB CARDS (catalog with search and filters) ---- */
   const LabCatalog = () => (
@@ -1299,8 +1310,8 @@ export default function CyberLab() {
         <div key={animKey} className="animate-fade-in">
           {activeTab === 'home' && (
             <div className="space-y-8">
-              <HeroSection />
-              <StatsSection />
+              <HeroSection onNavigate={handleTabSwitch} />
+              <StatsSection dashboard={dashboard} selectedStudent={selectedStudent} statsRef={statsRef} />
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-2xl font-bold">Лабораторные работы</h2>
