@@ -70,6 +70,7 @@ model FlagSubmission {
   student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   lab       Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
 
+  @@unique([studentId, labId, flagKey, correct], name: "unique_correct_flag_per_student")
   @@index([studentId, labId, flagKey])
   @@index([studentId, correct])
 }
