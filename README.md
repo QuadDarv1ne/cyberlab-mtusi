@@ -113,10 +113,10 @@ npm run db:reset     # Сбросить БД
 | **shadcn/ui** | Компоненты интерфейса (New York style) |
 | **Prisma 6** | ORM для работы с SQLite |
 | **Recharts 2** | Графики и диаграммы (BarChart, PieChart) |
-| **Framer Motion 12** | Анимации и переходы |
-| **Sonner** | Toast-уведомления |
+| **Radix UI** | Примитивы компонентов (toast, tabs, progress) |
 | **Lucide React** | Иконки |
-| **Zustand 5** | Управление состоянием |
+| **Zod 4** | Валидация схем |
+| **Custom hooks** | Управление состоянием (useState, useCountUp) |
 
 ## Структура проекта
 
@@ -147,11 +147,25 @@ cyberlab/
 │   │       ├── students/route.ts # GET /api/students
 │   │       ├── flags/route.ts    # POST /api/flags — проверка флага
 │   │       ├── dashboard/route.ts# GET /api/dashboard
+│   │       ├── articles/route.ts # GET/POST /api/articles
 │   │       └── progress/route.ts # GET /api/progress
-│   ├── components/ui/            # shadcn/ui компоненты (50+)
+│   ├── components/
+│   │   ├── hero-section.tsx      # Герой-баннер
+│   │   ├── stats-section.tsx     # Анимированная статистика
+│   │   ├── lab-catalog.tsx       # Каталог лабораторных
+│   │   ├── lab-detail.tsx        # Детали лабораторной
+│   │   ├── dashboard-view.tsx    # Дашборд с графиками
+│   │   ├── tools-reference.tsx   # Справочник инструментов
+│   │   ├── about-page.tsx        # Страница «О проекте»
+│   │   ├── ui/                   # shadcn/ui компоненты + badges.tsx
+│   │   └── error-boundary.tsx    # Error Boundary
 │   ├── hooks/
 │   │   ├── use-toast.ts          # Toast-уведомления
-│   │   └── use-mobile.ts         # Определение мобильных устройств
+│   │   └── use-count-up.ts       # Анимация счётчиков
+│   ├── types/
+│   │   └── index.ts              # TypeScript типы
+│   ├── constants/
+│   │   └── index.ts              # Константы (категории, сложность, навигация)
 │   └── lib/
 │       ├── db.ts                 # Prisma Client (singleton)
 │       └── utils.ts              # Утилиты (cn)

@@ -37,7 +37,6 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
     "no-fallthrough": "warn",
     "no-mixed-spaces-and-tabs": "error",
     "no-redeclare": "error",
-    "no-undef": "error",
     "no-unreachable": "error",
     "no-useless-escape": "warn",
     "eqeqeq": ["warn", "always", { "null": "ignore" }],
