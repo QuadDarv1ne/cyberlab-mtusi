@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
+  try {
   const students = await db.student.findMany({
     select: {
       id: true,
@@ -95,4 +96,8 @@ export async function GET() {
     totalStudents: students.length,
     totalLabs: labs.length,
   })
+  } catch (error) {
+    console.error('[API /dashboard] Error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }

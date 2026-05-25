@@ -14,6 +14,7 @@ const articleSchema = z.object({
 })
 
 export async function GET(req: Request) {
+  try {
   const { searchParams } = new URL(req.url)
   const category = searchParams.get('category')
   const search = searchParams.get('search')
@@ -55,6 +56,10 @@ export async function GET(req: Request) {
     page,
     totalPages: Math.ceil(total / limit),
   })
+  } catch (error) {
+    console.error('[API /articles GET] Error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
 
 export async function POST(req: Request) {
