@@ -1,6 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -16,15 +17,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CyberLab — Платформа лабораторных работ по кибербезопасности",
-  description: "Образовательная платформа МТУСИ для проведения лабораторных работ по информационной безопасности. OSINT, пентестинг, SQL-инъекции, сетевые атаки.",
-  keywords: ["кибербезопасность", "лабораторные", "МТУСИ", "OSINT", "пентестинг", "CTF", "SQL-инъекции", "Metasploit", "Nmap"],
-  authors: [{ name: "Кафедра ИБ МТУСИ" }],
+  title: {
+    default: "CyberLab — Платформа лабораторных работ по кибербезопасности",
+    template: "%s | CyberLab МТУСИ",
+  },
+  description: "Образовательная платформа МТУСИ для проведения лабораторных работ по информационной безопасности. Практические задания по OSINT, пентестингу, SQL-инъекциям, сетевым атакам и CTF-соревнованиям.",
+  keywords: ["кибербезопасность", "лабораторные", "МТУСИ", "OSINT", "пентестинг", "CTF", "SQL-инъекции", "Metasploit", "Nmap", "информационная безопасность"],
+  authors: [{ name: "Кафедра информационной безопасности МТУСИ" }],
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
+  },
   openGraph: {
-    title: "CyberLab — МТУСИ",
-    description: "Образовательная платформа для лабораторных работ по кибербезопасности",
+    title: "CyberLab — Платформа лабораторных работ по кибербезопасности",
+    description: "Образовательная платформа МТУСИ для проведения лабораторных работ по информационной безопасности",
     type: "website",
     locale: "ru_RU",
+    siteName: "CyberLab МТУСИ",
   },
   twitter: {
     card: "summary_large_image",
@@ -46,6 +56,20 @@ export default function RootLayout({
         <ErrorBoundary>
           {children}
         </ErrorBoundary>
+        <Script
+          id="json-ld"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "EducationalOrganization",
+              name: "CyberLab — МТУСИ",
+              description: "Образовательная платформа для проведения лабораторных работ по информационной безопасности",
+              url: "https://cyberlab.mtusi.ru",
+              sameAs: [],
+            }),
+          }}
+        />
         <Toaster />
       </body>
     </html>

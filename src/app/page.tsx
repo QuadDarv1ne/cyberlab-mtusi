@@ -7,7 +7,7 @@ import {
   Search, Bug, Network, ArrowRight, Star, Flag,
   BarChart3, GraduationCap, Lightbulb, Send, Menu, X,
   Moon, Sun, Award, Flame, Info, Code, Database,
-  FileSearch
+  FileSearch, FileText
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -123,6 +123,7 @@ const NAV_TABS = [
   { id: 'labs', label: 'Лабораторные', icon: <BookOpen className="w-4 h-4" /> },
   { id: 'dashboard', label: 'Дашборд', icon: <BarChart3 className="w-4 h-4" /> },
   { id: 'tools', label: 'Инструменты', icon: <Terminal className="w-4 h-4" /> },
+  { id: 'blog', label: 'Блог', icon: <FileText className="w-4 h-4" /> },
   { id: 'about', label: 'О проекте', icon: <Info className="w-4 h-4" /> },
 ]
 
@@ -171,6 +172,26 @@ export default function CyberLab() {
   const [catalogSearch, setCatalogSearch] = useState('')
   const [catalogCategoryFilter, setCatalogCategoryFilter] = useState<string>('all')
   const [catalogDifficultyFilter, setCatalogDifficultyFilter] = useState<string>('all')
+  // Blog state
+  interface BlogArticle {
+    id: string
+    slug: string
+    title: string
+    excerpt: string
+    content: string
+    author: string
+    category: string
+    tags: string
+    coverImage: string | null
+    publishedAt: string
+  }
+  const [articles, setArticles] = useState<BlogArticle[]>([])
+  const [selectedArticle, setSelectedArticle] = useState<BlogArticle | null>(null)
+  const [blogSearch, setBlogSearch] = useState('')
+  const [blogCategory, setBlogCategory] = useState<string>('all')
+  const [blogLoading, setBlogLoading] = useState(false)
+  const [blogPage, setBlogPage] = useState(1)
+  const [blogTotalPages, setBlogTotalPages] = useState(1)
   // Animation key for tab transitions
   const [animKey, setAnimKey] = useState(0)
   // Stats animation
@@ -254,6 +275,22 @@ export default function CyberLab() {
     } catch (e) { console.error(e) }
   }, [selectedStudent])
 
+  const fetchArticles = useCallback(async (page: number = 1, search: string = '', category: string = 'all') => {
+    setBlogLoading(true)
+    try {
+      const params = new URLSearchParams({ page: String(page), limit: '6' })
+      if (search) params.set('search', search)
+      if (category !== 'all') params.set('category', category)
+      const res = await fetch(`/api/articles?${params}`)
+      if (!res.ok) throw new Error(`Failed to fetch articles: ${res.status}`)
+      const data = await res.json()
+      setArticles(data.articles)
+      setBlogPage(data.page)
+      setBlogTotalPages(data.totalPages)
+    } catch (e) { console.error(e) }
+    setBlogLoading(false)
+  }, [])
+
   useEffect(() => {
     const init = async () => {
       await fetchStudents()
@@ -267,6 +304,12 @@ export default function CyberLab() {
   useEffect(() => {
     if (selectedStudent) fetchProgress()
   }, [selectedStudent, fetchProgress])
+
+  useEffect(() => {
+    if (activeTab === 'blog') {
+      fetchArticles(blogPage, blogSearch, blogCategory)
+    }
+  }, [activeTab, blogPage, blogSearch, blogCategory, fetchArticles])
 
   const submitFlag = async (labId: string, flagKey: string) => {
     const resultKey = `${labId}-${flagKey}`
@@ -1307,6 +1350,126 @@ export default function CyberLab() {
           {activeTab === 'lab-detail' && <LabDetail />}
           {activeTab === 'dashboard' && <DashboardView />}
           {activeTab === 'tools' && <ToolsReference />}
+          {activeTab === 'blog' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 mb-2">
+                <FileText className="w-6 h-6 text-cyan-600" />
+                <h2 className="text-2xl font-bold">Блог по информационной безопасности</h2>
+              </div>
+              <p className="text-muted-foreground">Статьи, учебные материалы и обзоры инструментов кибербезопасности</p>
+
+              {/* Search & Category Filter */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Поиск статей..."
+                    className="pl-10"
+                    value={blogSearch}
+                    onChange={(e) => { setBlogSearch(e.target.value); setBlogPage(1) }}
+                  />
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {['all', 'Кибербезопасность', 'Учебные материалы', 'Новости и обзоры'].map(cat => (
+                    <Badge
+                      key={cat}
+                      variant={blogCategory === cat ? 'default' : 'outline'}
+                      className="cursor-pointer select-none"
+                      onClick={() => { setBlogCategory(cat); setBlogPage(1) }}
+                    >
+                      {cat === 'all' ? 'Все' : cat}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {blogLoading ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[1, 2, 3].map(i => (
+                    <Card key={i} className="h-48 animate-pulse">
+                      <CardHeader><div className="h-4 bg-muted rounded w-3/4 mb-2" /><div className="h-3 bg-muted rounded w-1/2" /></CardHeader>
+                      <CardContent><div className="h-3 bg-muted rounded w-full mb-2" /><div className="h-3 bg-muted rounded w-2/3" /></CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : articles.length === 0 ? (
+                <Card className="text-center py-12">
+                  <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                  <CardTitle className="mb-2">Статей пока нет</CardTitle>
+                  <CardDescription>Загляните позже — мы добавляем новые материалы</CardDescription>
+                </Card>
+              ) : (
+                <>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {articles.map(article => (
+                      <Card
+                        key={article.id}
+                        className="hover:shadow-md transition-all cursor-pointer group"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setSelectedArticle(article)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedArticle(article) } }}
+                      >
+                        <CardHeader>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="secondary" className="text-xs">{article.category}</Badge>
+                          </div>
+                          <CardTitle className="text-lg group-hover:text-cyan-600 transition-colors line-clamp-2">{article.title}</CardTitle>
+                          <CardDescription className="text-xs">{article.author} • {new Date(article.publishedAt).toLocaleDateString('ru-RU')}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-muted-foreground line-clamp-3">{article.excerpt}</p>
+                        </CardContent>
+                        <CardFooter>
+                          <span className="text-sm text-cyan-600 font-medium group-hover:underline">Читать далее →</span>
+                        </CardFooter>
+                      </Card>
+                    ))}
+                  </div>
+
+                  {/* Pagination */}
+                  {blogTotalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2 mt-6">
+                      <Button variant="outline" size="sm" disabled={blogPage <= 1} onClick={() => setBlogPage(p => p - 1)}>← Назад</Button>
+                      <span className="text-sm text-muted-foreground">Стр. {blogPage} из {blogTotalPages}</span>
+                      <Button variant="outline" size="sm" disabled={blogPage >= blogTotalPages} onClick={() => setBlogPage(p => p + 1)}>Вперёд →</Button>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Article Detail Modal */}
+              {selectedArticle && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center p-4 overflow-y-auto" onClick={() => setSelectedArticle(null)}>
+                  <Card className="max-w-3xl w-full my-8" onClick={(e) => e.stopPropagation()}>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary">{selectedArticle.category}</Badge>
+                          {selectedArticle.tags && JSON.parse(selectedArticle.tags).length > 0 &&
+                            JSON.parse(selectedArticle.tags).map((tag: string) => (
+                              <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
+                            ))
+                          }
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => setSelectedArticle(null)}>
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <CardTitle className="text-2xl mt-3">{selectedArticle.title}</CardTitle>
+                      <CardDescription>{selectedArticle.author} • {new Date(selectedArticle.publishedAt).toLocaleDateString('ru-RU')}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="prose prose-sm dark:prose-invert max-w-none">
+                      {selectedArticle.content.split('\n').map((paragraph, i) => (
+                        paragraph.trim() ? <p key={i} className="mb-3 text-sm leading-relaxed">{paragraph}</p> : null
+                      ))}
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === 'about' && <AboutPage />}
         </div>
       </main>

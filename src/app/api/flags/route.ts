@@ -1,5 +1,33 @@
 import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
+import { z } from 'zod'
+
+const flagSubmissionSchema = z.object({
+  studentId: z.string().min(1, 'studentId is required'),
+  labId: z.string().min(1, 'labId is required'),
+  flagKey: z.string().min(1, 'flagKey is required'),
+  flagValue: z.string().min(1, 'flagValue is required').max(200, 'Flag value too long'),
+})
+
+// Simple in-memory rate limiter: 10 attempts per minute per student+lab
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+
+function checkRateLimit(key: string, maxAttempts = 10, windowMs = 60_000): { allowed: boolean; remaining: number } {
+  const now = Date.now()
+  const entry = rateLimitMap.get(key)
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs })
+    return { allowed: true, remaining: maxAttempts - 1 }
+  }
+
+  if (entry.count >= maxAttempts) {
+    return { allowed: false, remaining: 0 }
+  }
+
+  entry.count++
+  return { allowed: true, remaining: maxAttempts - entry.count }
+}
 
 export async function POST(req: Request) {
   let body
@@ -9,19 +37,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const { studentId, labId, flagKey, flagValue } = body
-
-  if (!studentId || !labId || !flagKey || !flagValue) {
-    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+  const parsed = flagSubmissionSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid request' }, { status: 400 })
   }
 
-  if (typeof studentId !== 'string' || typeof labId !== 'string' ||
-      typeof flagKey !== 'string' || typeof flagValue !== 'string') {
-    return NextResponse.json({ error: 'Invalid field types' }, { status: 400 })
-  }
+  const { studentId, labId, flagKey, flagValue } = parsed.data
 
-  if (flagValue.length > 200) {
-    return NextResponse.json({ error: 'Flag value too long' }, { status: 400 })
+  // Rate limiting: 10 attempts per minute per student+lab
+  const rateKey = `${studentId}:${labId}`
+  const rate = checkRateLimit(rateKey)
+  if (!rate.allowed) {
+    return NextResponse.json({ error: 'Слишком много попыток. Подождите минуту.' }, { status: 429 })
   }
 
   // Check if this flag was already submitted correctly by this student

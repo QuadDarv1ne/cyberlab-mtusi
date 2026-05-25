@@ -1,17 +1,23 @@
 import { db } from '@/lib/db'
 
 async function seed() {
-  // Create students
-  const student1 = await db.student.create({
-    data: { name: 'Дуплей Максим Игоревич', group: 'УБВТ-24-04' }
+  // Create students (idempotent)
+  const student1 = await db.student.upsert({
+    where: { id: 'seed-student-1' },
+    update: {},
+    create: { id: 'seed-student-1', name: 'Дуплей Максим Игоревич', group: 'УБВТ-24-04' },
   })
-  const student2 = await db.student.create({
-    data: { name: 'Думилин Вадим Владиславович', group: 'УБВТ-24-04' }
+  const student2 = await db.student.upsert({
+    where: { id: 'seed-student-2' },
+    update: {},
+    create: { id: 'seed-student-2', name: 'Думилин Вадим Владиславович', group: 'УБВТ-24-04' },
   })
 
-  // Create labs
-  const lab1 = await db.lab.create({
-    data: {
+  // Create labs (idempotent)
+  const lab1 = await db.lab.upsert({
+    where: { number: 1 },
+    update: {},
+    create: {
       number: 1,
       title: 'Сбор информации в компьютерных сетях',
       description: 'Исследование действий по сбору информации о целевой системе для проведения тестирования на проникновение. Получение навыков по работе с программным обеспечением для сбора информации (OSINT).',
@@ -30,8 +36,10 @@ async function seed() {
     }
   })
 
-  const lab2 = await db.lab.create({
-    data: {
+  const lab2 = await db.lab.upsert({
+    where: { number: 2 },
+    update: {},
+    create: {
       number: 2,
       title: 'Тестирование компьютерной сети на проникновение',
       description: 'Изучение эксплуатирования уязвимостей в удалённой системе с помощью программного обеспечения Metasploit, а также демонстрация того, как найденная уязвимость может быть эксплуатирована злоумышленником.',
@@ -50,8 +58,10 @@ async function seed() {
     }
   })
 
-  const lab3 = await db.lab.create({
-    data: {
+  const lab3 = await db.lab.upsert({
+    where: { number: 3 },
+    update: {},
+    create: {
       number: 3,
       title: 'Защита баз данных от атак методом внедрения SQL-кода',
       description: 'Изучение основных способов проведения атак на базы данных методом внедрения SQL-кода, а также способов их предотвращения.',
@@ -71,8 +81,10 @@ async function seed() {
     }
   })
 
-  const lab4 = await db.lab.create({
-    data: {
+  const lab4 = await db.lab.upsert({
+    where: { number: 4 },
+    update: {},
+    create: {
       number: 4,
       title: 'Проведение аудита веб-ресурсов',
       description: 'Приобретение навыков поиска уязвимостей в веб-ресурсах путём выявления структуры ресурса, сканирования на уязвимости и выявления ошибок в логике работы.',
@@ -91,8 +103,10 @@ async function seed() {
     }
   })
 
-  const lab5 = await db.lab.create({
-    data: {
+  const lab5 = await db.lab.upsert({
+    where: { number: 5 },
+    update: {},
+    create: {
       number: 5,
       title: 'ARP-spoofing и DNS-spoofing',
       description: 'Получение практических навыков реализации атак типа ARP-spoofing, DNS-spoofing и HSTS-spoofing, а также методов обнаружения и предотвращения данных типов атак.',
@@ -111,19 +125,89 @@ async function seed() {
     }
   })
 
-  // Create progress records
-  await db.labProgress.createMany({
-    data: [
-      { studentId: student1.id, labId: lab1.id, status: 'completed', flagsFound: 3, totalFlags: 3, score: 40, completedAt: new Date() },
-      { studentId: student1.id, labId: lab2.id, status: 'completed', flagsFound: 3, totalFlags: 3, score: 50, completedAt: new Date() },
-      { studentId: student1.id, labId: lab3.id, status: 'completed', flagsFound: 4, totalFlags: 4, score: 60, completedAt: new Date() },
-      { studentId: student1.id, labId: lab4.id, status: 'completed', flagsFound: 3, totalFlags: 3, score: 40, completedAt: new Date() },
-      { studentId: student1.id, labId: lab5.id, status: 'completed', flagsFound: 3, totalFlags: 3, score: 50, completedAt: new Date() },
-      { studentId: student2.id, labId: lab1.id, status: 'completed', flagsFound: 3, totalFlags: 3, score: 40, completedAt: new Date() },
-      { studentId: student2.id, labId: lab2.id, status: 'completed', flagsFound: 3, totalFlags: 3, score: 50, completedAt: new Date() },
-      { studentId: student2.id, labId: lab4.id, status: 'in_progress', flagsFound: 1, totalFlags: 3, score: 10 },
-    ]
-  })
+  // Create progress records (skip if already exists via unique constraint)
+  const progressData = [
+    { studentId: student1.id, labId: lab1.id, status: 'completed', flagsFound: 3, totalFlags: 3, score: 40, completedAt: new Date() },
+    { studentId: student1.id, labId: lab2.id, status: 'completed', flagsFound: 3, totalFlags: 3, score: 50, completedAt: new Date() },
+    { studentId: student1.id, labId: lab3.id, status: 'completed', flagsFound: 4, totalFlags: 4, score: 60, completedAt: new Date() },
+    { studentId: student1.id, labId: lab4.id, status: 'completed', flagsFound: 3, totalFlags: 3, score: 40, completedAt: new Date() },
+    { studentId: student1.id, labId: lab5.id, status: 'completed', flagsFound: 3, totalFlags: 3, score: 50, completedAt: new Date() },
+    { studentId: student2.id, labId: lab1.id, status: 'completed', flagsFound: 3, totalFlags: 3, score: 40, completedAt: new Date() },
+    { studentId: student2.id, labId: lab2.id, status: 'completed', flagsFound: 3, totalFlags: 3, score: 50, completedAt: new Date() },
+    { studentId: student2.id, labId: lab4.id, status: 'in_progress', flagsFound: 1, totalFlags: 3, score: 10 },
+  ]
+  for (const data of progressData) {
+    await db.labProgress.upsert({
+      where: { studentId_labId: { studentId: data.studentId, labId: data.labId } },
+      update: {},
+      create: data,
+    })
+  }
+
+  // Seed articles
+  const articles = [
+    {
+      slug: 'osint-introduction',
+      title: 'Введение в OSINT: сбор информации из открытых источников',
+      excerpt: 'Разбираем основные методы и инструменты OSINT для сбора информации о целевой системе: от Google Dorking до Spiderfoot и Maltego.',
+      content: `OSINT (Open Source Intelligence) — это разведка на основе данных из открытых источников. В контексте кибербезопасности OSINT используется для сбора информации о целевой системе перед проведением тестирования на проникновение.\n\nОсновные методы OSINT:\n\nGoogle Dorking — использование расширенных операторов поиска Google для нахождения чувствительной информации. Например, site:example.com находит все проиндексированные страницы, а filetype:pdf ищет документы.\n\nSpiderfoot — автоматизированный инструмент для сбора информации о доменах, IP-адресах и email. Поддерживает более 200 модулей для различных источников данных.\n\nMaltego — визуализация связей между сущностями: доменами, IP, email-адресами, телефонами. Позволяет построить граф связей и обнаружить скрытые зависимости.\n\nShodan — поисковая система для устройств, подключённых к интернету. Позволяет находить открытые порты, сервисы и уязвимости.\n\nПрактические рекомендации:\n— Всегда документируйте результаты разведки\n— Используйте несколько источников для перекрёстной проверки\n— Помните о юридических ограничениях сбора информации\n— Автоматизируйте повторяющиеся задачи`,
+      author: 'CyberLab MTUSI',
+      category: 'Учебные материалы',
+      tags: '["OSINT","разведка","Spiderfoot","Maltego"]',
+    },
+    {
+      slug: 'sql-injection-basics',
+      title: 'SQL-инъекции: основы и методы защиты',
+      excerpt: 'Подробный разбор типов SQL-инъекций, примеров эксплуатации и современных подходов к защите веб-приложений.',
+      content: `SQL-инъекция — один из самых распространённых и опасных типов атак на веб-приложения. Атакующий внедряет произвольный SQL-код в запросы приложения, что может привести к чтению, изменению или удалению данных.\n\nТипы SQL-инъекций:\n\nUnion-based — использование оператора UNION для объединения результатов нескольких SELECT-запросов. Позволяет извлечь данные из других таблиц.\n\nBoolean-based blind — определение истинности условий по различиям в ответе приложения. Медленный, но универсальный метод.\n\nTime-based blind — использование задержек (SLEEP, WAITFOR) для определения истинности условий. Применяется, когда приложение не возвращает различий в ответе.\n\nError-based — извлечение информации из сообщений об ошибках базы данных.\n\nМетоды защиты:\n\nПараметризованные запросы — самый надёжный способ. Значения подставляются через параметры, а не конкатенацию строк.\n\nORM — использование фреймворков (Prisma, Sequelize), которые автоматически параметризуют запросы.\n\nВалидация входных данных — строгая проверка всех пользовательских данных.\n\nПринцип наименьших привилегий — ограничение прав учётной записи БД.\n\nПодготовленные выражения — предварительная компиляция запроса без значений.`,
+      author: 'CyberLab MTUSI',
+      category: 'Учебные материалы',
+      tags: '["SQL","веб-безопасность","инъекции","защита"]',
+    },
+    {
+      slug: 'metasploit-framework-guide',
+      title: 'Metasploit Framework: практическое руководство',
+      excerpt: 'Как использовать Metasploit для поиска и эксплуатации уязвимостей. Разбираем основные модули и типичный workflow пентестера.',
+      content: `Metasploit Framework — открытая платформа для разработки и запуска эксплоитов. Один из основных инструментов пентестера.\n\nОсновные компоненты:\n\nmsfconsole — основной интерфейс для работы с фреймворком.\nmsfvenom — генератор полезной нагрузки (payloads).\nmsfdb — управление базой данных.\n\nТипичный workflow:\n\nРазведка — сканирование портов с помощью Nmap, определение сервисов и версий.\nПоиск эксплоита — search в msfconsole или поиск на Exploit-DB.\nНастройка — установка RHOSTS, RPORT, LHOST, выбор payload.\nЗапуск — exploit или run. Ожидание сессии.\nПостэксплуатация — сбор данных, повышение привилегий, lateral movement.\n\nОсновные модули:\nexploit — код, использующий уязвимость.\npayload — код, выполняемый на целевой системе.\nauxiliary — вспомогательные модули (сканеры, фурри и т.д.).\nencoder — обход антивирусных систем.\n\nВажно: используйте Metasploit только в рамках авторизованного тестирования.`,
+      author: 'CyberLab MTUSI',
+      category: 'Кибербезопасность',
+      tags: '["Metasploit","pentest","эксплуатация","уязвимости"]',
+    },
+    {
+      slug: 'arp-dns-spoofing',
+      title: 'ARP и DNS спуфинг: как работают атаки и как от них защититься',
+      content: `ARP-spoofing и DNS-spoofing — два распространённых метода атак на уровне сети, позволяющих злоумышленнику перехватывать и модифицировать трафик.\n\nARP-spoofing:\nПротокол ARP не имеет аутентификации. Атакующий отправляет фальшивые ARP-пакеты, связывая свой MAC-адрес с IP-адресом целевого узла. Весь трафик идёт через машину атакующего.\n\nИнструменты: Bettercap, Ettercap, arpspoof.\n\nDNS-spoofing:\nАтакующий подменяет ответы DNS-сервера, перенаправляя жертву на подконтрольный сервер. Может использоваться для фишинга, распространения malware.\n\nИнструменты: Bettercap (dns-spoof), dnsspoof.\n\nМетоды защиты:\n— Статические ARP-записи (для критичных узлов)\n— DHCP snooping + Dynamic ARP Inspection на коммутаторах\n— DNSSEC для защиты DNS-запросов\n— HTTPS и HSTS для защиты от подмены контента\n— Мониторинг сетевой аномалии (IDS/IPS)`,
+      excerpt: 'Разбираем механизмы ARP и DNS спуфинга, инструменты для проведения атак (Bettercap) и методы защиты на уровне сети.',
+      author: 'CyberLab MTUSI',
+      category: 'Сетевые атаки',
+      tags: '["ARP","DNS","Bettercap","сетевые атаки"]',
+    },
+    {
+      slug: 'top-security-tools-2024',
+      title: 'Топ-10 инструментов кибербезопасности в 2024 году',
+      excerpt: 'Обзор наиболее востребованных инструментов для пентеста, анализа уязвимостей и мониторинга безопасности.',
+      content: `Подборка наиболее полезных инструментов для специалистов по кибербезопасности:\n\n1. Nmap — сканер сетей и портов. Незаменим для разведки.\n2. Metasploit Framework — платформа для эксплуатации уязвимостей.\n3. Burp Suite — комплексный инструмент для тестирования веб-приложений.\n4. Wireshark — анализатор сетевого трафика.\n5. OWASP ZAP — открытый сканер безопасности веб-приложений.\n6. Bettercap — фреймворк для сетевых атак (ARP, DNS, WiFi).\n7. John the Ripper — взломщик паролей.\n8. SQLmap — автоматизация SQL-инъекций.\n9. Ghidra — дизассемблер и инструмент реверс-инжиниринга от NSA.\n10. Splunk — платформа для мониторинга и анализа логов безопасности.\n\nКаждый инструмент решает свой класс задач. Рекомендуется изучить хотя бы базовое использование каждого.`,
+      author: 'CyberLab MTUSI',
+      category: 'Новости и обзоры',
+      tags: '["инструменты","обзор","pentest","Nmap","Burp Suite"]',
+    },
+    {
+      slug: 'ctf-strategy-guide',
+      title: 'Стратегия прохождения CTF-соревнований',
+      excerpt: 'Как эффективно подходить к решению CTF-задач: от выбора категории до работы в команде и распределения времени.',
+      content: `CTF (Capture The Flag) — соревнования по кибербезопасности, где участники решают задачи и находят «флаги» — секретные строки.\n\nОсновные категории:\n\nWeb — уязвимости веб-приложений: XSS, SQLi, SSRF, RCE.\nCrypto — криптография: шифры, хеши, RSA, эллиптические кривые.\nReverse — реверс-инжиниринг бинарных файлов.\nPwn — эксплуатация бинарных уязвимостей: buffer overflow, format string.\nForensics — анализ образов дисков, сетевого трафика, файлов.\nMisc — всё остальное: OSINT, стеганография, логические задачи.\n\nСтратегия:\n— Начните с простых задач (100-200 баллов)\n— Распределяйте задачи между членами команды по специализации\n— Не застревайте на одной задаче — переключайтесь\n— Документируйте ход решения\n— Используйте writeup'и после соревнования для обучения\n\nПолезные платформы: HackTheBox, TryHackMe, PicoCTF, CTFtime.`,
+      author: 'CyberLab MTUSI',
+      category: 'Кибербезопасность',
+      tags: '["CTF","стратегия","соревнования","обучение"]',
+    },
+  ]
+
+  for (const article of articles) {
+    const existing = await db.article.findUnique({ where: { slug: article.slug } })
+    if (!existing) {
+      await db.article.create({ data: article })
+    }
+  }
 
   console.log('Seed completed!')
 }

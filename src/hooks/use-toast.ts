@@ -180,7 +180,7 @@ function useToast() {
         listeners.splice(index, 1)
       }
     }
-  }, [state])
+  }, []) // setState is stable, no need to re-subscribe
 
   return {
     ...state,

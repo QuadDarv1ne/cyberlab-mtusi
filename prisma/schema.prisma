@@ -8,26 +8,28 @@ datasource db {
 }
 
 model Student {
-  id        String   @id @default(cuid())
-  name      String
-  group     String
-  createdAt DateTime @default(now())
-  progress  LabProgress[]
+  id             String   @id @default(cuid())
+  name           String
+  group          String
+  createdAt      DateTime @default(now())
+  progress       LabProgress[]
+  flagSubmissions FlagSubmission[]
 }
 
 model Lab {
-  id          String   @id @default(cuid())
-  number      Int      @unique
-  title       String
-  description String
-  goal        String
-  tools       String
-  difficulty  String   @default("medium")
-  category    String
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-  flags       LabFlag[]
-  progress    LabProgress[]
+  id             String   @id @default(cuid())
+  number         Int      @unique
+  title          String
+  description    String
+  goal           String
+  tools          String
+  difficulty     String   @default("medium")
+  category       String
+  order          Int      @default(0)
+  createdAt      DateTime @default(now())
+  flags          LabFlag[]
+  progress       LabProgress[]
+  flagSubmissions FlagSubmission[]
 }
 
 model LabFlag {
@@ -70,4 +72,19 @@ model FlagSubmission {
 
   @@index([studentId, labId, flagKey])
   @@index([studentId, correct])
+}
+
+model Article {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  excerpt     String
+  content     String
+  author      String
+  category    String
+  tags        String   // JSON array stored as string
+  coverImage  String?
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
