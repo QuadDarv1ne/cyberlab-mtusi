@@ -87,7 +87,9 @@ export default function CyberLab() {
       const data = await res.json()
       setLabs(data)
     } catch (error) {
-      console.error('Failed to fetch labs:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to fetch labs:', error)
+      }
       toast({ title: 'Ошибка загрузки', description: 'Не удалось загрузить лабораторные работы.', variant: 'destructive' })
     }
   }, [toast])
@@ -99,7 +101,9 @@ export default function CyberLab() {
       const data = await res.json()
       setDashboard(data)
     } catch (error) {
-      console.error('Failed to fetch dashboard:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to fetch dashboard:', error)
+      }
       toast({ title: 'Ошибка загрузки', description: 'Не удалось загрузить статистику.', variant: 'destructive' })
     }
   }, [toast])
@@ -111,7 +115,9 @@ export default function CyberLab() {
       const data = await res.json()
       setStudents(data)
     } catch (error) {
-      console.error('Failed to fetch students:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to fetch students:', error)
+      }
       toast({ title: 'Ошибка загрузки', description: 'Не удалось загрузить список студентов.', variant: 'destructive' })
     }
   }, [toast])
@@ -125,7 +131,9 @@ export default function CyberLab() {
       setFoundFlags(data.found || [])
       setProgressRecords(data.progress || [])
     } catch (error) {
-      console.error('Failed to fetch progress:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to fetch progress:', error)
+      }
       toast({ title: 'Ошибка загрузки', description: 'Не удалось загрузить прогресс студента.', variant: 'destructive' })
     }
   }, [selectedStudent, toast])
@@ -143,7 +151,9 @@ export default function CyberLab() {
       setBlogPage(data.page)
       setBlogTotalPages(data.totalPages)
     } catch (error) {
-      console.error('Failed to fetch articles:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to fetch articles:', error)
+      }
       toast({ title: 'Ошибка загрузки', description: 'Не удалось загрузить статьи.', variant: 'destructive' })
     }
     setBlogLoading(false)

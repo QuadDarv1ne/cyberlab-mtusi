@@ -76,6 +76,22 @@ export async function GET(req: Request) {
   }, 'GET /api/articles')
 }
 
+// Comprehensive HTML sanitization - strips all tags and dangerous patterns
+function sanitizeHtml(input: string): string {
+  return input
+    // Remove all HTML tags (complete strip, no allowed tags)
+    .replace(/<[^>]*>/g, '')
+    // Remove javascript: protocol
+    .replace(/javascript\s*:/gi, '')
+    // Remove data: protocol (could contain scripts)
+    .replace(/data\s*:/gi, '')
+    // Remove vbscript: protocol
+    .replace(/vbscript\s*:/gi, '')
+    // Normalize HTML entities that could be used for bypass
+    .replace(/&[#]?[a-zA-Z0-9]+;/g, '')
+    .trim()
+}
+
 export async function POST(req: Request) {
   return withErrorHandling(async () => {
     // Rate limit: 5 article creations per minute per IP
@@ -100,14 +116,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid request' }, { status: 400 })
     }
 
-    // Basic XSS sanitization - strip script tags and event handlers from content
+    // XSS sanitization - strip all HTML and dangerous protocols
     const sanitizedData = {
       ...parsed.data,
-      title: parsed.data.title.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ''),
-      excerpt: parsed.data.excerpt.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ''),
-      content: parsed.data.content
-        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-        .replace(/on\w+="[^"]*"/gi, ''),
+      title: sanitizeHtml(parsed.data.title),
+      excerpt: sanitizeHtml(parsed.data.excerpt),
+      content: sanitizeHtml(parsed.data.content),
+      author: sanitizeHtml(parsed.data.author),
+      category: sanitizeHtml(parsed.data.category),
     }
 
     const existing = await db.articleFindUnique({ where: { slug: sanitizedData.slug } })

@@ -32,9 +32,13 @@ export function detectDatabaseType(): DbType {
 
   // 4. Fallback: check if SQLite file exists (backwards compatible)
   try {
-    // Use dynamic import to avoid TypeScript require errors
-    const fs = eval('require')('fs')
-    const path = eval('require')('path')
+    // Use dynamic import to avoid TypeScript require errors in ESM/strict mode
+    // eslint-disable-next-line @typescript-eslint/no-implied-eval
+    const requireFunc = typeof require !== 'undefined'
+      ? require
+      : new Function('specifier', 'return require(specifier)') as NodeRequire
+    const fs = requireFunc('fs')
+    const path = requireFunc('path')
     const sqlitePath = path.join(process.cwd(), 'prisma', 'db', 'custom.db')
     if (fs.existsSync(sqlitePath)) {
       return 'sqlite'

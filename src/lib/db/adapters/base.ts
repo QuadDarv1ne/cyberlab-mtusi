@@ -15,6 +15,11 @@ export abstract class DatabaseAdapter {
   abstract connect(): Promise<void>
   abstract disconnect(): Promise<void>
 
+  /** Returns the raw database client for seed scripts and migrations. */
+  get rawClient(): unknown {
+    throw new Error('rawClient is not supported for this database type')
+  }
+
   // Student operations
   abstract studentFindMany(args: {
     select?: Record<string, unknown>

@@ -24,77 +24,94 @@ export class PrismaAdapter extends DatabaseAdapter {
 
   // Student operations
   async studentFindMany(args: { select?: Record<string, unknown>; orderBy?: Record<string, unknown>; include?: Record<string, unknown> }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.client.student.findMany(args as any)
   }
 
   async studentFindUnique(args: { where: { id: string } }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.client.student.findUnique(args as any)
   }
 
   // Lab operations
   async labFindMany(args: { include?: Record<string, unknown>; orderBy?: Record<string, unknown> }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.client.lab.findMany(args as any)
   }
 
   async labFindUnique(args: { where: { id: string }; include?: Record<string, unknown> }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.client.lab.findUnique(args as any)
   }
 
   // LabProgress operations
   async labProgressFindMany(args: { where: Record<string, unknown>; select?: Record<string, unknown> }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.client.labProgress.findMany(args as any)
   }
 
   async labProgressFindUnique(args: { where: { studentId_labId: { studentId: string; labId: string } } }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.client.labProgress.findUnique({
       where: { studentId_labId: args.where.studentId_labId }
     } as any)
   }
 
   async labProgressUpdate(args: { where: { id: string }; data: Record<string, unknown> }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.client.labProgress.update(args as any)
   }
 
   async labProgressCreate(args: { data: Record<string, unknown> }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.client.labProgress.create(args as any)
   }
 
   // LabFlag operations
   async labFlagFindFirst(args: { where: Record<string, unknown> }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.client.labFlag.findFirst(args as any)
   }
 
   // FlagSubmission operations
   async flagSubmissionFindMany(args: { where?: Record<string, unknown>; select?: Record<string, unknown>; orderBy?: Record<string, unknown>; take?: number; include?: Record<string, unknown> }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.client.flagSubmission.findMany(args as any)
   }
 
   async flagSubmissionFindFirst(args: { where: Record<string, unknown> }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.client.flagSubmission.findFirst(args as any)
   }
 
   async flagSubmissionCreate(args: { data: Record<string, unknown> }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.client.flagSubmission.create(args as any)
   }
 
-  async flagSubmissionGroupBy(args: { by: string[]; _count: boolean }) {
-    return this.client.flagSubmission.groupBy(args as any)
+  async flagSubmissionGroupBy(args: { by: string[]; _count: boolean }): Promise<Array<{ correct: boolean | null; _count: number }>> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return this.client.flagSubmission.groupBy(args as any) as unknown as Array<{ correct: boolean | null; _count: number }>
   }
 
   // Article operations
   async articleFindUnique(args: { where: { slug: string } }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.client.article.findUnique(args as any)
   }
 
   async articleFindMany(args: { where?: Record<string, unknown>; orderBy?: Record<string, unknown>; skip?: number; take?: number }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.client.article.findMany(args as any)
   }
 
   async articleCount(args: { where?: Record<string, unknown> }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.client.article.count(args as any)
   }
 
   async articleCreate(args: { data: Record<string, unknown> }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.client.article.create(args as any)
   }
 
@@ -190,18 +207,19 @@ export class PrismaAdapter extends DatabaseAdapter {
 
   // Transaction wrapper
   async transaction<T>(fn: (tx: TransactionContext) => Promise<T>): Promise<T> {
-    return this.client.$transaction(async (tx) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return this.client.$transaction(async (tx: any) => {
       return fn({
         flagSubmission: tx.flagSubmission,
         labFlag: tx.labFlag,
         labProgress: tx.labProgress,
         lab: tx.lab,
       } as unknown as TransactionContext)
-    }) as Promise<T>
+    })
   }
 
   // Expose raw client for seed scripts
-  get rawClient(): PrismaClient {
+  override get rawClient(): PrismaClient {
     return this.client
   }
 }

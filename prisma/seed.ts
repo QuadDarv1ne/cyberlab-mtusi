@@ -1,20 +1,24 @@
 import { db } from '@/lib/db'
+import type { PrismaClient } from '@prisma/client'
 
 async function seed() {
+  // Use raw Prisma client for seed operations (upsert, nested creates, etc.)
+  const prisma = db.rawClient as PrismaClient
+
   // Create students (idempotent)
-  const student1 = await db.student.upsert({
+  const student1 = await prisma.student.upsert({
     where: { id: 'seed-student-1' },
     update: {},
     create: { id: 'seed-student-1', name: 'Дуплей Максим Игоревич', group: 'УБВТ-24-04' },
   })
-  const student2 = await db.student.upsert({
+  const student2 = await prisma.student.upsert({
     where: { id: 'seed-student-2' },
     update: {},
     create: { id: 'seed-student-2', name: 'Думилин Вадим Владиславович', group: 'УБВТ-24-04' },
   })
 
   // Create labs (idempotent)
-  const lab1 = await db.lab.upsert({
+  const lab1 = await prisma.lab.upsert({
     where: { number: 1 },
     update: {},
     create: {
@@ -36,7 +40,7 @@ async function seed() {
     }
   })
 
-  const lab2 = await db.lab.upsert({
+  const lab2 = await prisma.lab.upsert({
     where: { number: 2 },
     update: {},
     create: {
@@ -58,7 +62,7 @@ async function seed() {
     }
   })
 
-  const lab3 = await db.lab.upsert({
+  const lab3 = await prisma.lab.upsert({
     where: { number: 3 },
     update: {},
     create: {
@@ -81,7 +85,7 @@ async function seed() {
     }
   })
 
-  const lab4 = await db.lab.upsert({
+  const lab4 = await prisma.lab.upsert({
     where: { number: 4 },
     update: {},
     create: {
@@ -103,7 +107,7 @@ async function seed() {
     }
   })
 
-  const lab5 = await db.lab.upsert({
+  const lab5 = await prisma.lab.upsert({
     where: { number: 5 },
     update: {},
     create: {
@@ -137,7 +141,7 @@ async function seed() {
     { studentId: student2.id, labId: lab4.id, status: 'in_progress', flagsFound: 1, totalFlags: 3, score: 10 },
   ]
   for (const data of progressData) {
-    await db.labProgress.upsert({
+    await prisma.labProgress.upsert({
       where: { studentId_labId: { studentId: data.studentId, labId: data.labId } },
       update: {},
       create: data,
@@ -203,9 +207,9 @@ async function seed() {
   ]
 
   for (const article of articles) {
-    const existing = await db.article.findUnique({ where: { slug: article.slug } })
+    const existing = await prisma.article.findUnique({ where: { slug: article.slug } })
     if (!existing) {
-      await db.article.create({ data: article })
+      await prisma.article.create({ data: article })
     }
   }
 

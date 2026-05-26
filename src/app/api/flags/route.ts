@@ -112,7 +112,7 @@ export async function POST(req: Request) {
         })
 
         const labWithFlags = await tx.lab.findUnique({ where: { id: labId }, include: { flags: true } })
-        const totalFlags = labWithFlags?.flags.length ?? 0
+        const totalFlags = labWithFlags?.flags?.length ?? 0
 
         if (existing) {
           const newFlagsFound = existing.flagsFound + 1
