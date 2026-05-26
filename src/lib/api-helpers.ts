@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 /**
  * Wraps an async API route handler with centralized error handling.
@@ -14,7 +15,7 @@ export async function withErrorHandling(
   } catch (error) {
     // Sanitize error logging - don't log full error objects that may contain sensitive data
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error(`[API ${routeName}] Error: ${errorMessage}`)
+    logger.error(`[API ${routeName}] Error: ${errorMessage}`)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -1,4 +1,7 @@
-import { DbType } from './adapters/base'
+import { existsSync } from 'fs'
+import { join } from 'path'
+import type { DbType } from './adapters/base'
+import { logger } from '../logger'
 
 /**
  * Auto-detects the optimal database type from environment variables.
@@ -11,7 +14,7 @@ export function detectDatabaseType(): DbType {
     if (validTypes.includes(process.env.DB_TYPE as DbType)) {
       return process.env.DB_TYPE as DbType
     }
-    console.warn(`[config] Invalid DB_TYPE "${process.env.DB_TYPE}", falling back to auto-detection`)
+    logger.warn(`[config] Invalid DB_TYPE "${process.env.DB_TYPE}", falling back to auto-detection`)
   }
 
   // 2. Detect from DATABASE_URL pattern
@@ -32,15 +35,8 @@ export function detectDatabaseType(): DbType {
 
   // 4. Fallback: check if SQLite file exists (backwards compatible)
   try {
-    // Use dynamic import to avoid TypeScript require errors in ESM/strict mode
-    // eslint-disable-next-line @typescript-eslint/no-implied-eval
-    const requireFunc = typeof require !== 'undefined'
-      ? require
-      : new Function('specifier', 'return require(specifier)') as NodeRequire
-    const fs = requireFunc('fs')
-    const path = requireFunc('path')
-    const sqlitePath = path.join(process.cwd(), 'prisma', 'db', 'custom.db')
-    if (fs.existsSync(sqlitePath)) {
+    const sqlitePath = join(process.cwd(), 'prisma', 'db', 'custom.db')
+    if (existsSync(sqlitePath)) {
       return 'sqlite'
     }
   } catch {

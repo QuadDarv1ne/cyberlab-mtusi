@@ -62,8 +62,6 @@ export function checkRateLimit(
  * Falls back to a per-session unique ID via cookie to prevent all
  * unidentified clients from sharing the same rate-limit bucket.
  */
-const CLIENT_ID_COOKIE = 'clid'
-
 export function getClientIp(request: Request): string {
   const forwarded = request.headers.get('x-forwarded-for')
   if (forwarded) {
@@ -86,13 +84,4 @@ export function getClientIp(request: Request): string {
   return `anon:${newId}`
 }
 
-/**
- * Build a Set-Cookie header value for the client ID cookie.
- * Call this when the response needs to persist a newly generated ID.
- */
-export function buildClientIdCookie(clientId: string): string {
-  if (!clientId.startsWith('anon:')) return ''
-  const id = clientId.slice(5)
-  // 1 year expiry, path=/, HttpOnly, SameSite=Lax
-  return `clid=${id}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax`
-}
+

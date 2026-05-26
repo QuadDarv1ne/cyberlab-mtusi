@@ -1,7 +1,8 @@
-import { DatabaseAdapter } from './db/adapters/base'
+import type { DatabaseAdapter } from './db/adapters/base'
 import { PrismaAdapter } from './db/adapters/prisma-adapter'
 import { MongoAdapter } from './db/adapters/mongodb-adapter'
 import { detectDatabaseType } from './db/config'
+import { logger } from './logger'
 
 const globalForDb = globalThis as unknown as {
   adapter: DatabaseAdapter | undefined
@@ -29,7 +30,7 @@ if (globalForDb.adapter) {
 
   // Auto-connect on first access
   adapter.connect().catch((err) => {
-    console.error(`[db] Failed to connect to ${dbType}:`, err.message)
+    logger.error(`[db] Failed to connect to ${dbType}:`, err.message)
     throw err
   })
 

@@ -243,7 +243,6 @@ export default function CyberLab() {
     } finally {
       setSubmitting(prev => ({ ...prev, [resultKey]: false }))
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flagInputs, students, selectedStudentIdx, toast, fetchProgress, fetchDashboard])
 
   const isFlagFound = (labId: string, flagKey: string) =>

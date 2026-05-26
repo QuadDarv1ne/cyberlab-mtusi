@@ -1,5 +1,6 @@
-import { MongoClient, ObjectId, Document, Collection } from 'mongodb'
-import { DatabaseAdapter, DbType } from './base'
+import { MongoClient, ObjectId } from 'mongodb'
+import type { DbType } from './base';
+import { DatabaseAdapter } from './base'
 import type { TransactionContext, DashboardData, LabProgress, FlagSubmission, Article, Student, Lab, LabFlag, RecentSubmission } from '../types'
 
 interface Collections {

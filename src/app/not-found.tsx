@@ -1,7 +1,12 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Shield, Home } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+
+export const metadata: Metadata = {
+  title: '404 — Страница не найдена | CyberLab',
+}
 
 export default function NotFound() {
   return (

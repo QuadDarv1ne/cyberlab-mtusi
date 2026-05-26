@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client'
-import { DatabaseAdapter, DbType } from './base'
-import type { TransactionContext, DashboardData, LabProgress, FlagSubmission } from '../types'
+import type { DbType } from './base';
+import { DatabaseAdapter } from './base'
+import type { TransactionContext, DashboardData } from '../types'
 
 export class PrismaAdapter extends DatabaseAdapter {
   readonly type: DbType
@@ -51,7 +52,7 @@ export class PrismaAdapter extends DatabaseAdapter {
   }
 
   async labProgressFindUnique(args: { where: { studentId_labId: { studentId: string; labId: string } } }) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     return this.client.labProgress.findUnique({
       where: { studentId_labId: args.where.studentId_labId }
     } as any)
