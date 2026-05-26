@@ -30,6 +30,7 @@ if (globalForDb.adapter) {
   // Auto-connect on first access
   adapter.connect().catch((err) => {
     console.error(`[db] Failed to connect to ${dbType}:`, err.message)
+    throw err
   })
 
   if (process.env.NODE_ENV !== 'production') {

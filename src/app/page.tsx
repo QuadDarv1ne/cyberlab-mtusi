@@ -49,6 +49,8 @@ export default function CyberLab() {
   const [articles, setArticles] = useState<BlogArticle[]>([])
   const [selectedArticle, setSelectedArticle] = useState<BlogArticle | null>(null)
   const [blogSearch, setBlogSearch] = useState('')
+  const [debouncedBlogSearch, setDebouncedBlogSearch] = useState('')
+  const blogSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [blogCategory, setBlogCategory] = useState<string>('all')
   const [blogLoading, setBlogLoading] = useState(false)
   const [blogPage, setBlogPage] = useState(1)
@@ -61,14 +63,19 @@ export default function CyberLab() {
     localStorage.setItem('cyberlab-dark-mode', String(darkMode))
   }, [darkMode])
 
-  const selectedStudent = students[selectedStudentIdx] || null
-
-  const handleTabSwitch = async (tabId: string) => {
-    setActiveTab(tabId)
-    if (tabId === 'dashboard' && selectedStudent) {
-      await fetchProgress()
+  // Debounce blog search - wait 400ms before updating search term
+  useEffect(() => {
+    if (blogSearchTimerRef.current) clearTimeout(blogSearchTimerRef.current)
+    blogSearchTimerRef.current = setTimeout(() => {
+      setDebouncedBlogSearch(blogSearch)
+      setBlogPage(1)
+    }, 400)
+    return () => {
+      if (blogSearchTimerRef.current) clearTimeout(blogSearchTimerRef.current)
     }
-  }
+  }, [blogSearch])
+
+  const selectedStudent = students[selectedStudentIdx] || null
 
   useEffect(() => {
     if (!statsRef.current) return undefined
@@ -138,6 +145,17 @@ export default function CyberLab() {
     }
   }, [selectedStudent, toast])
 
+  const handleTabSwitch = useCallback((tabId: string) => {
+    setActiveTab(tabId)
+  }, [])
+
+  // Fetch progress when dashboard tab is activated
+  useEffect(() => {
+    if (activeTab === 'dashboard' && selectedStudent) {
+      fetchProgress()
+    }
+  }, [activeTab, selectedStudent, fetchProgress])
+
   const fetchArticles = useCallback(async (page: number = 1, search: string = '', category: string = 'all') => {
     setBlogLoading(true)
     try {
@@ -175,18 +193,19 @@ export default function CyberLab() {
 
   useEffect(() => {
     if (activeTab === 'blog') {
-      handleBlogFetch(blogPage, blogSearch, blogCategory)
+      handleBlogFetch(blogPage, debouncedBlogSearch, blogCategory)
     }
-  }, [activeTab, blogPage, blogSearch, blogCategory, handleBlogFetch])
+  }, [activeTab, blogPage, debouncedBlogSearch, blogCategory, handleBlogFetch])
 
-  const submitFlag = async (labId: string, flagKey: string) => {
+  const submitFlag = useCallback(async (labId: string, flagKey: string) => {
     const resultKey = `${labId}-${flagKey}`
     const flagValue = flagInputs[resultKey]
     if (!flagValue?.trim()) {
       toast({ title: 'Ошибка', description: 'Введите значение флага', variant: 'destructive' })
       return
     }
-    if (!selectedStudent) {
+    const currentStudent = students[selectedStudentIdx]
+    if (!currentStudent) {
       toast({ title: 'Ошибка', description: 'Выберите студента', variant: 'destructive' })
       return
     }
@@ -197,7 +216,7 @@ export default function CyberLab() {
       const res = await fetch('/api/flags', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentId: selectedStudent.id, labId, flagKey, flagValue: flagValue.trim() })
+        body: JSON.stringify({ studentId: currentStudent.id, labId, flagKey, flagValue: flagValue.trim() })
       })
       const data = await res.json()
 
@@ -208,19 +227,23 @@ export default function CyberLab() {
 
       if (data.correct && !data.alreadyFound) {
         toast({ title: 'Флаг принят!', description: data.message })
-        fetchProgress()
-        fetchDashboard()
+        await fetchProgress()
+        await fetchDashboard()
       } else if (data.alreadyFound) {
         toast({ title: 'Уже найден', description: data.message })
       } else {
         toast({ title: 'Неверный флаг', description: data.message, variant: 'destructive' })
       }
-    } catch {
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Flag submission error:', error)
+      }
       toast({ title: 'Ошибка', description: 'Не удалось отправить флаг', variant: 'destructive' })
     } finally {
       setSubmitting(prev => ({ ...prev, [resultKey]: false }))
     }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flagInputs, students, selectedStudentIdx, toast, fetchProgress, fetchDashboard])
 
   const isFlagFound = (labId: string, flagKey: string) =>
     foundFlags.some(f => f.labId === labId && f.flagKey === flagKey)
@@ -257,6 +280,7 @@ export default function CyberLab() {
               className="flex items-center gap-3 cursor-pointer"
               role="button"
               tabIndex={0}
+              aria-label="Перейти на главную"
               onClick={() => handleTabSwitch('home')}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTabSwitch('home') } }}
             >
@@ -335,6 +359,7 @@ export default function CyberLab() {
                         className="hover:shadow-md transition-all cursor-pointer group p-4 rounded-lg border bg-card"
                         role="button"
                         tabIndex={0}
+                        aria-label={`Открыть лабораторную работу: ${lab.title}`}
                         onClick={() => { setSelectedLab(lab); handleTabSwitch('lab-detail') }}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedLab(lab); handleTabSwitch('lab-detail') } }}
                       >
@@ -418,10 +443,9 @@ export default function CyberLab() {
                     placeholder="Поиск статей..."
                     className="w-full pl-10 pr-4 py-2 border rounded-md bg-background"
                     value={blogSearch}
-                    onChange={(e) => { setBlogSearch(e.target.value); setBlogPage(1) }}
+                    onChange={(e) => setBlogSearch(e.target.value)}
                     aria-label="Поиск статей"
                     role="searchbox"
-                    onKeyDown={(e) => { if (e.key === 'Enter') setBlogPage(1) }}
                   />
                 </div>
                 <div className="flex gap-2 flex-wrap" role="group" aria-label="Фильтр по категории">
@@ -466,6 +490,7 @@ export default function CyberLab() {
                         className="hover:shadow-md transition-all cursor-pointer group rounded-lg border bg-card p-4"
                         role="button"
                         tabIndex={0}
+                        aria-label={`Читать статью: ${article.title}`}
                         onClick={() => setSelectedArticle(article)}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedArticle(article) } }}
                       >
@@ -491,18 +516,24 @@ export default function CyberLab() {
               )}
 
               {selectedArticle && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center p-4 overflow-y-auto" onClick={() => setSelectedArticle(null)}>
+                <div
+                  className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center p-4 overflow-y-auto"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="article-dialog-title"
+                  onClick={() => setSelectedArticle(null)}
+                >
                   <div className="max-w-3xl w-full my-8 rounded-lg border bg-card" onClick={(e) => e.stopPropagation()}>
                     <div className="p-6">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <Badge variant="secondary">{selectedArticle.category}</Badge>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => setSelectedArticle(null)}>
+                        <Button variant="ghost" size="icon" onClick={() => setSelectedArticle(null)} aria-label="Закрыть">
                           <X className="w-4 h-4" />
                         </Button>
                       </div>
-                      <h2 className="text-2xl font-bold mt-3">{selectedArticle.title}</h2>
+                      <h2 id="article-dialog-title" className="text-2xl font-bold mt-3">{selectedArticle.title}</h2>
                       <p className="text-sm text-muted-foreground mt-1">{selectedArticle.author} • {new Date(selectedArticle.publishedAt).toLocaleDateString('ru-RU')}</p>
                       <div className="mt-4 space-y-3">
                         {selectedArticle.content.split('\n').map((paragraph, i) =>

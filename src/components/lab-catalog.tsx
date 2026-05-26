@@ -115,6 +115,7 @@ export function LabCatalog({
                 className="hover:shadow-md transition-all cursor-pointer group"
                 role="button"
                 tabIndex={0}
+                aria-label={`Открыть лабораторную работу: ${lab.title}`}
                 onClick={() => { setSelectedLab(lab); handleTabSwitch('lab-detail') }}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedLab(lab); handleTabSwitch('lab-detail') } }}
               >
