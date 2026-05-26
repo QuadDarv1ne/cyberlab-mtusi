@@ -78,14 +78,15 @@ export default function CyberLab() {
   const selectedStudent = students[selectedStudentIdx] || null
 
   useEffect(() => {
-    if (!statsRef.current) return undefined
+    const el = statsRef.current
+    if (!el) return
     const observer = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) observer.disconnect() },
       { threshold: 0.2 }
     )
-    observer.observe(statsRef.current)
+    observer.observe(el)
     return (): void => { observer.disconnect() }
-  }, [loading])
+  }, [])
 
   const fetchLabs = useCallback(async () => {
     try {

@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { BarChart3, Target, GraduationCap, FileSearch, CheckCircle2, AlertCircle, Clock, Trophy } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -31,23 +32,25 @@ export function DashboardView({
 }) {
   const currentStat = dashboard.studentStats.find(s => s.id === selectedStudent?.id)
 
-  const barChartData = labs.map(lab => {
+  const barChartData = useMemo(() => labs.map(lab => {
     const prog = progressRecords.find(p => p.labId === lab.id)
     return {
       name: `ЛР${lab.number}`,
       points: prog?.score ?? 0,
       maxPoints: lab.flags.reduce((sum, f) => sum + f.points, 0),
     }
-  })
+  }), [labs, progressRecords])
 
-  const completedCount = progressRecords.filter(p => p.status === 'completed').length
-  const inProgressCount = progressRecords.filter(p => p.status === 'in_progress').length
-  const notStartedCount = Math.max((dashboard.totalLabs) - completedCount - inProgressCount, 0)
-  const pieChartData = [
-    { name: 'Выполнено', value: completedCount, color: '#10b981' },
-    { name: 'В процессе', value: inProgressCount, color: '#f59e0b' },
-    { name: 'Не начато', value: notStartedCount, color: '#94a3b8' },
-  ].filter(d => d.value > 0)
+  const pieChartData = useMemo(() => {
+    const completedCount = progressRecords.filter(p => p.status === 'completed').length
+    const inProgressCount = progressRecords.filter(p => p.status === 'in_progress').length
+    const notStartedCount = Math.max((dashboard.totalLabs) - completedCount - inProgressCount, 0)
+    return [
+      { name: 'Выполнено', value: completedCount, color: '#10b981' },
+      { name: 'В процессе', value: inProgressCount, color: '#f59e0b' },
+      { name: 'Не начато', value: notStartedCount, color: '#94a3b8' },
+    ].filter(d => d.value > 0)
+  }, [progressRecords, dashboard.totalLabs])
 
   return (
     <div className="space-y-6">
@@ -182,11 +185,11 @@ export function DashboardView({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Лабораторная</th>
-                  <th className="text-center py-3 px-2 font-medium text-muted-foreground">Сложность</th>
-                  <th className="text-center py-3 px-2 font-medium text-muted-foreground">Выполнили</th>
-                  <th className="text-center py-3 px-2 font-medium text-muted-foreground">В процессе</th>
-                  <th className="text-center py-3 px-2 font-medium text-muted-foreground">Прогресс</th>
+                  <th scope="col" className="text-left py-3 px-2 font-medium text-muted-foreground">Лабораторная</th>
+                  <th scope="col" className="text-center py-3 px-2 font-medium text-muted-foreground">Сложность</th>
+                  <th scope="col" className="text-center py-3 px-2 font-medium text-muted-foreground">Выполнили</th>
+                  <th scope="col" className="text-center py-3 px-2 font-medium text-muted-foreground">В процессе</th>
+                  <th scope="col" className="text-center py-3 px-2 font-medium text-muted-foreground">Прогресс</th>
                 </tr>
               </thead>
               <tbody>
@@ -268,7 +271,8 @@ export function DashboardView({
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {[...dashboard.studentStats].sort((a, b) => b.totalScore - a.totalScore).map((s, idx) => (
+            {useMemo(() =>
+              [...dashboard.studentStats].sort((a, b) => b.totalScore - a.totalScore).map((s, idx) => (
               <div key={s.id} className={`flex items-center gap-4 p-3 rounded-lg transition-colors ${s.id === selectedStudent?.id ? 'bg-cyan-500/10 border border-cyan-500/20' : 'bg-muted/50'}`}>
                 <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
                   idx === 0 ? 'bg-amber-500 text-white' : idx === 1 ? 'bg-slate-400 text-white' : idx === 2 ? 'bg-orange-400 text-white' : 'bg-muted text-muted-foreground'
@@ -284,7 +288,8 @@ export function DashboardView({
                   <div className="text-xs text-muted-foreground">{s.completedLabs}/{s.totalLabs} работ</div>
                 </div>
               </div>
-            ))}
+            ))
+            , [dashboard.studentStats, selectedStudent?.id])}
           </div>
         </CardContent>
       </Card>

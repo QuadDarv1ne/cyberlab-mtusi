@@ -1,4 +1,4 @@
-import { DatabaseAdapter, DbType } from './db/adapters/base'
+import { DatabaseAdapter } from './db/adapters/base'
 import { PrismaAdapter } from './db/adapters/prisma-adapter'
 import { MongoAdapter } from './db/adapters/mongodb-adapter'
 import { detectDatabaseType } from './db/config'
