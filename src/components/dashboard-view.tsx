@@ -104,7 +104,7 @@ export function DashboardView({
       <div className="grid md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><BarChart3 className="w-5 h-5 text-cyan-500" /> Баллы по лабораторным</CardTitle>
+            <CardTitle className="flex items-center gap-2"><BarChart3 className="w-5 h-5 text-cyan-500" aria-hidden="true" /> Баллы по лабораторным</CardTitle>
             <CardDescription>Ваш результат по каждой работе</CardDescription>
           </CardHeader>
           <CardContent>
@@ -127,7 +127,7 @@ export function DashboardView({
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Target className="w-5 h-5 text-emerald-500" /> Статус выполнения</CardTitle>
+            <CardTitle className="flex items-center gap-2"><Target className="w-5 h-5 text-emerald-500" aria-hidden="true" /> Статус выполнения</CardTitle>
             <CardDescription>Распределение по статусам</CardDescription>
           </CardHeader>
           <CardContent>
@@ -156,7 +156,7 @@ export function DashboardView({
                 </ResponsiveContainer>
               ) : (
                 <div className="text-center text-muted-foreground">
-                  <FileSearch className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                  <FileSearch className="w-10 h-10 mx-auto mb-2 opacity-50" aria-hidden="true" />
                   <p className="text-sm">Нет данных для отображения</p>
                 </div>
               )}
@@ -183,6 +183,7 @@ export function DashboardView({
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
+              <caption className="sr-only">Прогресс по лабораторным работам</caption>
               <thead>
                 <tr className="border-b">
                   <th scope="col" className="text-left py-3 px-2 font-medium text-muted-foreground">Лабораторная</th>
@@ -201,12 +202,12 @@ export function DashboardView({
                     <td className="py-3 px-2 text-center"><DifficultyBadge level={ls.difficulty} /></td>
                     <td className="py-3 px-2 text-center">
                       <span className="inline-flex items-center gap-1 text-emerald-600 font-medium">
-                        <CheckCircle2 className="w-4 h-4" />{ls.completed}
+                        <CheckCircle2 className="w-4 h-4" aria-hidden="true" />{ls.completed}
                       </span>
                     </td>
                     <td className="py-3 px-2 text-center">
                       <span className="inline-flex items-center gap-1 text-amber-600 font-medium">
-                        <Clock className="w-4 h-4" />{ls.inProgress}
+                        <Clock className="w-4 h-4" aria-hidden="true" />{ls.inProgress}
                       </span>
                     </td>
                     <td className="py-3 px-2">
@@ -226,7 +227,7 @@ export function DashboardView({
       {dashboard.recentSubmissions && dashboard.recentSubmissions.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Clock className="w-5 h-5 text-cyan-500" /> Последние отправки</CardTitle>
+            <CardTitle className="flex items-center gap-2"><Clock className="w-5 h-5 text-cyan-500" aria-hidden="true" /> Последние отправки</CardTitle>
             <CardDescription>Последние попытки отправки флагов</CardDescription>
           </CardHeader>
           <CardContent>
@@ -267,7 +268,7 @@ export function DashboardView({
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Trophy className="w-5 h-5 text-amber-500" /> Рейтинг студентов</CardTitle>
+          <CardTitle className="flex items-center gap-2"><Trophy className="w-5 h-5 text-amber-500" aria-hidden="true" /> Рейтинг студентов</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">

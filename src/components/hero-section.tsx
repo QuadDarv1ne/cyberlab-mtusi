@@ -14,7 +14,7 @@ export function HeroSection({ onNavigate }: { onNavigate: (tab: string) => void 
       <div className="relative z-10 px-6 py-16 md:px-12 md:py-24">
         <div className="flex items-center gap-3 mb-6">
           <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-500/30">
-            <Shield className="w-6 h-6 text-cyan-400" />
+            <Shield className="w-6 h-6 text-cyan-400" aria-hidden="true" />
           </div>
           <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/30">МТУСИ · Кафедра ИБ</Badge>
         </div>

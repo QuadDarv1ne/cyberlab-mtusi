@@ -63,7 +63,7 @@ export function LabDetail({
         <div className="md:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Target className="w-5 h-5 text-cyan-500" /> Цель работы</CardTitle>
+              <CardTitle className="flex items-center gap-2"><Target className="w-5 h-5 text-cyan-500" aria-hidden="true" /> Цель работы</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground leading-relaxed">{selectedLab.goal}</p>
@@ -72,7 +72,7 @@ export function LabDetail({
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><BookOpen className="w-5 h-5 text-cyan-500" /> Описание</CardTitle>
+              <CardTitle className="flex items-center gap-2"><BookOpen className="w-5 h-5 text-cyan-500" aria-hidden="true" /> Описание</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground leading-relaxed">{selectedLab.description}</p>
@@ -81,13 +81,13 @@ export function LabDetail({
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Flag className="w-5 h-5 text-amber-500" /> Задания и флаги</CardTitle>
+              <CardTitle className="flex items-center gap-2"><Flag className="w-5 h-5 text-amber-500" aria-hidden="true" /> Задания и флаги</CardTitle>
               <CardDescription>Найдите флаги, чтобы получить баллы. Формат: CYBER{'{...}'}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {noneFound && selectedLab.flags.length > 0 && (
                 <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50 border border-dashed mb-4">
-                  <Search className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <Search className="w-5 h-5 text-muted-foreground shrink-0" aria-hidden="true" />
                   <div>
                     <p className="text-sm font-medium">Начните поиск флагов</p>
                     <p className="text-xs text-muted-foreground">Ни один флаг ещё не найден. Введите значения в формате CYBER{'{...}'} и нажмите «Отправить».</p>
@@ -112,7 +112,7 @@ export function LabDetail({
                         {found && <Badge className="bg-emerald-500/10 text-emerald-600 gap-1 text-xs"><CheckCircle2 className="w-3 h-3" />Найден</Badge>}
                       </div>
                       <Badge variant="outline" className="gap-1">
-                        <Trophy className="w-3 h-3" />{flag.points} б.
+                        <Trophy className="w-3 h-3" aria-hidden="true" />{flag.points} б.
                       </Badge>
                     </div>
 
@@ -169,7 +169,7 @@ export function LabDetail({
               <div className="flex flex-wrap gap-2">
                 {selectedLab.tools.split(', ').map(tool => (
                   <Badge key={tool} variant="secondary" className="gap-1">
-                    <Terminal className="w-3 h-3" />{tool}
+                    <Terminal className="w-3 h-3" aria-hidden="true" />{tool}
                   </Badge>
                 ))}
               </div>
@@ -209,7 +209,7 @@ export function LabDetail({
           <Card className="bg-muted/50">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Lightbulb className="w-4 h-4 text-amber-500" />
+                <Lightbulb className="w-4 h-4 text-amber-500" aria-hidden="true" />
                 <span className="text-sm font-medium">Подсказка</span>
               </div>
               <p className="text-xs text-muted-foreground">

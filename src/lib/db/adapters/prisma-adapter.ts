@@ -52,9 +52,9 @@ export class PrismaAdapter extends DatabaseAdapter {
   }
 
   async labProgressFindUnique(args: { where: { studentId_labId: { studentId: string; labId: string } } }) {
-     
     return this.client.labProgress.findUnique({
       where: { studentId_labId: args.where.studentId_labId }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any)
   }
 

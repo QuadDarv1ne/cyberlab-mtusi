@@ -47,7 +47,7 @@ export function LabCatalog({
       </div>
 
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
         <Input
           placeholder="Поиск по названию или описанию..."
           value={catalogSearch}
@@ -90,7 +90,7 @@ export function LabCatalog({
       {filteredLabs.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <FileSearch className="w-12 h-12 text-muted-foreground/50 mb-4" />
+            <FileSearch className="w-12 h-12 text-muted-foreground/50 mb-4" aria-hidden="true" />
             <h3 className="text-lg font-semibold mb-1">Ничего не найдено</h3>
             <p className="text-sm text-muted-foreground max-w-sm mb-4">
               Попробуйте изменить параметры поиска или сбросить фильтры, чтобы найти лабораторные работы.
@@ -139,7 +139,7 @@ export function LabCatalog({
                       </div>
                       <CardTitle className="text-lg group-hover:text-cyan-600 transition-colors">{lab.title}</CardTitle>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-cyan-500 transition-colors shrink-0 mt-1" />
+                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-cyan-500 transition-colors shrink-0 mt-1" aria-hidden="true" />
                   </div>
                 </CardHeader>
                 <CardContent className="pb-3">

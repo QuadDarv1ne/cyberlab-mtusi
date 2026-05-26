@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
+import { logger } from '@/lib/logger'
 import { NAV_TABS } from '@/constants/index'
 import type { Lab, StudentDb, DashboardData, FoundFlag, ProgressRecord, BlogArticle } from '@/types'
 
@@ -85,7 +86,8 @@ export default function CyberLab() {
       { threshold: 0.2 }
     )
     observer.observe(el)
-    return (): void => { observer.disconnect() }
+    // eslint-disable-next-line consistent-return
+    return () => { observer.disconnect() }
   }, [])
 
   const fetchLabs = useCallback(async () => {
@@ -95,9 +97,7 @@ export default function CyberLab() {
       const data = await res.json()
       setLabs(data)
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Failed to fetch labs:', error)
-      }
+      logger.error('Failed to fetch labs:', error)
       toast({ title: 'Ошибка загрузки', description: 'Не удалось загрузить лабораторные работы.', variant: 'destructive' })
     }
   }, [toast])
@@ -109,9 +109,7 @@ export default function CyberLab() {
       const data = await res.json()
       setDashboard(data)
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Failed to fetch dashboard:', error)
-      }
+      logger.error('Failed to fetch dashboard:', error)
       toast({ title: 'Ошибка загрузки', description: 'Не удалось загрузить статистику.', variant: 'destructive' })
     }
   }, [toast])
@@ -123,9 +121,7 @@ export default function CyberLab() {
       const data = await res.json()
       setStudents(data)
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Failed to fetch students:', error)
-      }
+      logger.error('Failed to fetch students:', error)
       toast({ title: 'Ошибка загрузки', description: 'Не удалось загрузить список студентов.', variant: 'destructive' })
     }
   }, [toast])
@@ -139,9 +135,7 @@ export default function CyberLab() {
       setFoundFlags(data.found || [])
       setProgressRecords(data.progress || [])
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Failed to fetch progress:', error)
-      }
+      logger.error('Failed to fetch progress:', error)
       toast({ title: 'Ошибка загрузки', description: 'Не удалось загрузить прогресс студента.', variant: 'destructive' })
     }
   }, [selectedStudent, toast])
@@ -150,7 +144,6 @@ export default function CyberLab() {
     setActiveTab(tabId)
   }, [])
 
-  // Fetch progress when dashboard tab is activated
   useEffect(() => {
     if (activeTab === 'dashboard' && selectedStudent) {
       fetchProgress()
@@ -170,9 +163,7 @@ export default function CyberLab() {
       setBlogPage(data.page)
       setBlogTotalPages(data.totalPages)
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Failed to fetch articles:', error)
-      }
+      logger.error('Failed to fetch articles:', error)
       toast({ title: 'Ошибка загрузки', description: 'Не удалось загрузить статьи.', variant: 'destructive' })
     }
     setBlogLoading(false)
@@ -236,9 +227,7 @@ export default function CyberLab() {
         toast({ title: 'Неверный флаг', description: data.message, variant: 'destructive' })
       }
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Flag submission error:', error)
-      }
+      logger.error('Flag submission error:', error)
       toast({ title: 'Ошибка', description: 'Не удалось отправить флаг', variant: 'destructive' })
     } finally {
       setSubmitting(prev => ({ ...prev, [resultKey]: false }))
@@ -285,7 +274,7 @@ export default function CyberLab() {
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTabSwitch('home') } }}
             >
               <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-slate-900 dark:bg-slate-100">
-                <Shield className="w-5 h-5 text-cyan-400 dark:text-cyan-600" />
+                <Shield className="w-5 h-5 text-cyan-400 dark:text-cyan-600" aria-hidden="true" />
               </div>
               <span className="font-bold text-lg hidden sm:inline">CyberLab</span>
             </div>
@@ -304,7 +293,7 @@ export default function CyberLab() {
               </Button>
               {selectedStudent && (
                 <Badge variant="outline" className="hidden sm:flex gap-1" aria-label={`Активный студент: ${selectedStudent.name}`}>
-                  <GraduationCap className="w-3 h-3" />
+                  <GraduationCap className="w-3 h-3" aria-hidden="true" />
                   {selectedStudent.name}
                 </Badge>
               )}
@@ -432,7 +421,7 @@ export default function CyberLab() {
           {activeTab === 'blog' && (
             <div className="space-y-6">
               <div className="flex items-center gap-3 mb-2">
-                <FileText className="w-6 h-6 text-cyan-600" />
+                <FileText className="w-6 h-6 text-cyan-600" aria-hidden="true" />
                 <h2 className="text-2xl font-bold">Блог по информационной безопасности</h2>
               </div>
               <p className="text-muted-foreground">Статьи, учебные материалы и обзоры инструментов кибербезопасности</p>
@@ -477,7 +466,7 @@ export default function CyberLab() {
                 </div>
               ) : articles.length === 0 ? (
                 <div className="text-center py-12 rounded-lg border bg-card p-8">
-                  <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                  <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-3" aria-hidden="true" />
                   <h3 className="text-lg font-semibold mb-1">Статей пока нет</h3>
                   <p className="text-muted-foreground">Загляните позже — мы добавляем новые материалы</p>
                 </div>
@@ -537,7 +526,7 @@ export default function CyberLab() {
                       <p className="text-sm text-muted-foreground mt-1">{selectedArticle.author} • {new Date(selectedArticle.publishedAt).toLocaleDateString('ru-RU')}</p>
                       <div className="mt-4 space-y-3">
                         {selectedArticle.content.split('\n').map((paragraph, i) =>
-                          paragraph.trim() ? <p key={i} className="text-sm leading-relaxed">{paragraph}</p> : null
+                          paragraph.trim() ? <p key={`${selectedArticle.id}-p-${i}`} className="text-sm leading-relaxed">{paragraph}</p> : null
                         )}
                       </div>
                     </div>
@@ -554,7 +543,7 @@ export default function CyberLab() {
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Shield className="w-4 h-4" />
+              <Shield className="w-4 h-4" aria-hidden="true" />
               <span>CyberLab — МТУСИ, Кафедра информационной безопасности</span>
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-sm text-muted-foreground">

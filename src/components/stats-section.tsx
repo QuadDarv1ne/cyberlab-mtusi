@@ -18,10 +18,10 @@ export function StatsSection({
   const accuracyValue = dashboard ? Math.round((dashboard.correctSubmissions / Math.max(dashboard.totalSubmissions, 1)) * 100) : 0
   return (
     <div ref={statsRef} className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <StatCard icon={<BookOpen className="w-5 h-5" />} label="Лабораторных" value={dashboard?.totalLabs ?? 5} color="text-cyan-500" />
-      <StatCard icon={<Flame className="w-5 h-5" />} label="Ваши баллы" value={currentStat?.totalScore ?? 0} color="text-orange-500" />
-      <StatCard icon={<Flag className="w-5 h-5" />} label="Флагов найдено" value={dashboard?.correctSubmissions ?? 0} color="text-emerald-500" />
-      <StatCard icon={<Target className="w-5 h-5" />} label="Точность" value={accuracyValue} color="text-amber-500" isPercentage />
+      <StatCard icon={<BookOpen className="w-5 h-5" aria-hidden="true" />} label="Лабораторных" value={dashboard?.totalLabs ?? 5} color="text-cyan-500" />
+      <StatCard icon={<Flame className="w-5 h-5" aria-hidden="true" />} label="Ваши баллы" value={currentStat?.totalScore ?? 0} color="text-orange-500" />
+      <StatCard icon={<Flag className="w-5 h-5" aria-hidden="true" />} label="Флагов найдено" value={dashboard?.correctSubmissions ?? 0} color="text-emerald-500" />
+      <StatCard icon={<Target className="w-5 h-5" aria-hidden="true" />} label="Точность" value={accuracyValue} color="text-amber-500" isPercentage />
     </div>
   )
 }

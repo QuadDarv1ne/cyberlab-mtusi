@@ -14,7 +14,7 @@ export function AboutPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-cyan-500" /> CyberLab
+              <Shield className="w-5 h-5 text-cyan-500" aria-hidden="true" /> CyberLab
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -33,14 +33,14 @@ export function AboutPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <GraduationCap className="w-5 h-5 text-emerald-500" /> Разработчик
+              <GraduationCap className="w-5 h-5 text-emerald-500" aria-hidden="true" /> Разработчик
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">
               <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                 <div className="flex items-center justify-center w-10 h-10 rounded-full bg-cyan-500/10">
-                  <Users className="w-5 h-5 text-cyan-600" />
+                  <Users className="w-5 h-5 text-cyan-600" aria-hidden="true" />
                 </div>
                 <div>
                   <div className="font-semibold">Дуплей Максим Игоревич</div>
@@ -69,8 +69,8 @@ export function AboutPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Code className="w-5 h-5 text-amber-500" /> Технологический стек
+            <CardTitle className="flex items-center gap-2">
+              <Code className="w-5 h-5 text-amber-500" aria-hidden="true" /> Технологический стек
           </CardTitle>
           <CardDescription>Технологии, использованные при разработке платформы</CardDescription>
         </CardHeader>
@@ -103,7 +103,7 @@ export function AboutPage() {
         <CardContent className="p-6 md:p-8">
           <div className="flex items-center gap-3 mb-4">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-cyan-500/20 border border-cyan-500/30">
-              <Shield className="w-5 h-5 text-cyan-400" />
+              <Shield className="w-5 h-5 text-cyan-400" aria-hidden="true" />
             </div>
             <h3 className="text-lg font-bold">CyberLab · МТУСИ</h3>
           </div>
