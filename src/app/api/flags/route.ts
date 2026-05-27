@@ -3,6 +3,7 @@ import { withErrorHandling } from '@/lib/api-helpers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
+import { constantTimeCompare } from '@/lib/constant-time-compare'
 
 const flagSubmissionSchema = z.object({
   studentId: z.string().min(1, 'studentId is required'),
@@ -10,22 +11,6 @@ const flagSubmissionSchema = z.object({
   flagKey: z.string().min(1, 'flagKey is required'),
   flagValue: z.string().min(1, 'flagValue is required').max(200, 'Flag value too long'),
 })
-
-/**
- * Timing-safe string comparison to prevent timing oracle attacks.
- * Compares two strings in constant time regardless of where they differ.
- */
-function constantTimeCompare(a: string, b: string): boolean {
-  let result = 0
-  if (a.length !== b.length) {
-    result = 1
-    b = a
-  }
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i)
-  }
-  return result === 0
-}
 
 export async function POST(req: Request) {
   return withErrorHandling(async () => {
