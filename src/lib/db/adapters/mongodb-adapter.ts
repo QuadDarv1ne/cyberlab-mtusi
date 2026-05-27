@@ -79,6 +79,18 @@ export class MongoAdapter extends DatabaseAdapter {
     return ObjectId.isValid(id) ? new ObjectId(id) : id
   }
 
+  // Helper: Map _id to id for a single document
+  private mapDoc<T>(doc: Record<string, unknown>): T {
+    const { _id, ...rest } = doc
+    const id = typeof _id === 'object' && _id ? (_id as { toString(): string }).toString() : String(_id)
+    return { ...rest, id } as T
+  }
+
+  // Helper: Map _id to id for an array of documents
+  private mapDocs<T>(docs: Record<string, unknown>[]): T[] {
+    return docs.map(doc => this.mapDoc<T>(doc))
+  }
+
   // Student operations
   async studentFindMany({ select, orderBy, include }: { select?: Record<string, unknown>; orderBy?: Record<string, unknown>; include?: Record<string, unknown> }): Promise<Student[]> {
     const projection = select ? this.mapSelectToProjection(select) : {}
@@ -88,16 +100,18 @@ export class MongoAdapter extends DatabaseAdapter {
     if (include?.progress) {
       const students = await cursor.toArray()
       for (const student of students) {
-        student.progress = await this.cols.labProgress.find({ studentId: student._id.toString() }).toArray()
+        const progressDocs = await this.cols.labProgress.find({ studentId: student._id.toString() }).toArray()
+        student.progress = this.mapDocs(progressDocs)
       }
-      return students
+      return this.mapDocs<Student>(students)
     }
 
-    return cursor.toArray()
+    return this.mapDocs<Student>(await cursor.toArray())
   }
 
   async studentFindUnique({ where }: { where: { id: string } }): Promise<Student | null> {
-    return this.cols.students.findOne({ _id: this.toObjectId(where.id) })
+    const doc = await this.cols.students.findOne({ _id: this.toObjectId(where.id) })
+    return doc ? this.mapDoc<Student>(doc) : null
   }
 
   // Lab operations
@@ -133,12 +147,14 @@ export class MongoAdapter extends DatabaseAdapter {
   // LabProgress operations
   async labProgressFindMany({ where, select }: { where: Record<string, unknown>; select?: Record<string, unknown> }): Promise<LabProgress[]> {
     const projection = select ? this.mapSelectToProjection(select) : {}
-    return this.cols.labProgress.find(where, { projection }).toArray() as unknown as LabProgress[]
+    const docs = await this.cols.labProgress.find(where, { projection }).toArray()
+    return this.mapDocs<LabProgress>(docs)
   }
 
   async labProgressFindUnique({ where }: { where: { studentId_labId: { studentId: string; labId: string } } }): Promise<LabProgress | null> {
     const { studentId, labId } = where.studentId_labId
-    return this.cols.labProgress.findOne({ studentId, labId }) as unknown as LabProgress | null
+    const doc = await this.cols.labProgress.findOne({ studentId, labId })
+    return doc ? this.mapDoc<LabProgress>(doc) : null
   }
 
   async labProgressUpdate({ where, data }: { where: { id: string }; data: Record<string, unknown> }): Promise<LabProgress> {
@@ -146,17 +162,20 @@ export class MongoAdapter extends DatabaseAdapter {
       { _id: this.toObjectId(where.id) },
       { $set: data }
     )
-    return this.cols.labProgress.findOne({ _id: this.toObjectId(where.id) }) as unknown as LabProgress
+    const doc = await this.cols.labProgress.findOne({ _id: this.toObjectId(where.id) })
+    return this.mapDoc<LabProgress>(doc!)
   }
 
   async labProgressCreate({ data }: { data: Record<string, unknown> }): Promise<LabProgress> {
     const result = await this.cols.labProgress.insertOne(data)
-    return this.cols.labProgress.findOne({ _id: result.insertedId }) as unknown as LabProgress
+    const doc = await this.cols.labProgress.findOne({ _id: result.insertedId })
+    return this.mapDoc<LabProgress>(doc!)
   }
 
   // LabFlag operations
   async labFlagFindFirst({ where }: { where: Record<string, unknown> }): Promise<LabFlag | null> {
-    return this.cols.labFlags.findOne(where) as unknown as LabFlag | null
+    const doc = await this.cols.labFlags.findOne(where)
+    return doc ? this.mapDoc<LabFlag>(doc) : null
   }
 
   // FlagSubmission operations
@@ -199,7 +218,8 @@ export class MongoAdapter extends DatabaseAdapter {
   }
 
   async flagSubmissionFindFirst({ where }: { where: Record<string, unknown> }): Promise<FlagSubmission | null> {
-    return this.cols.flagSubmissions.findOne(where) as unknown as FlagSubmission | null
+    const doc = await this.cols.flagSubmissions.findOne(where)
+    return doc ? this.mapDoc<FlagSubmission>(doc) : null
   }
 
   async flagSubmissionCreate({ data }: { data: Record<string, unknown> }): Promise<FlagSubmission> {
@@ -385,17 +405,24 @@ export class MongoAdapter extends DatabaseAdapter {
                 { _id: this.toObjectId(args.where.id) },
                 { $set: args.data }
               )
-              return txCols.labProgress.findOne({ _id: this.toObjectId(args.where.id) })
+              const doc = await txCols.labProgress.findOne({ _id: this.toObjectId(args.where.id) })
+              return doc ? { ...doc, id: doc._id.toString() } : null
             },
             create: async (args: { data: Record<string, unknown> }) => {
               const result = await txCols.labProgress.insertOne(args.data)
-              return txCols.labProgress.findOne({ _id: result.insertedId })
+              const doc = await txCols.labProgress.findOne({ _id: result.insertedId })
+              return doc ? { ...doc, id: doc._id.toString() } : null
             },
           },
           lab: {
-            findUnique: async (args: { where: { id: string } }) => {
+            findUnique: async (args: { where: { id: string }; include?: { flags?: boolean } }) => {
               const lab = await txCols.labs.findOne({ _id: this.toObjectId(args.where.id) })
-              return lab ? { ...lab, id: lab._id.toString() } : null
+              if (!lab) return null
+              if (args.include?.flags) {
+                const flags = await txCols.labFlags.find({ labId: lab._id.toString() }).toArray()
+                lab.flags = flags
+              }
+              return { ...lab, id: lab._id.toString() }
             },
           },
         } as unknown as TransactionContext)

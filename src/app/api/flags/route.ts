@@ -16,11 +16,11 @@ const flagSubmissionSchema = z.object({
  * Compares two strings in constant time regardless of where they differ.
  */
 function constantTimeCompare(a: string, b: string): boolean {
-  if (a.length !== b.length) {
-    // Still do a dummy comparison to maintain constant time
-    return false
-  }
   let result = 0
+  if (a.length !== b.length) {
+    result = 1
+    b = a
+  }
   for (let i = 0; i < a.length; i++) {
     result |= a.charCodeAt(i) ^ b.charCodeAt(i)
   }
