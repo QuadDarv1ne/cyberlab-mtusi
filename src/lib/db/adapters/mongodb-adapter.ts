@@ -410,12 +410,18 @@ export class MongoAdapter extends DatabaseAdapter {
               return doc ? { ...doc, id: doc._id.toString() } : null
             },
             update: async (args: { where: { id: string }; data: Record<string, unknown> }) => {
-              await txCols.labProgress.updateOne(
+              const result = await txCols.labProgress.updateOne(
                 { _id: this.toObjectId(args.where.id) },
                 { $set: args.data }
               )
+              if (result.matchedCount === 0) {
+                throw new Error(`LabProgress not found: ${args.where.id}`)
+              }
               const doc = await txCols.labProgress.findOne({ _id: this.toObjectId(args.where.id) })
-              return doc ? { ...doc, id: doc._id.toString() } : null
+              if (!doc) {
+                throw new Error(`LabProgress document disappeared after update: ${args.where.id}`)
+              }
+              return { ...doc, id: doc._id.toString() }
             },
             create: async (args: { data: Record<string, unknown> }) => {
               const result = await txCols.labProgress.insertOne(args.data)

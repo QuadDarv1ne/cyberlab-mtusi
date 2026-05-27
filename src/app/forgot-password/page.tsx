@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
-  const [token, setToken] = useState<string | null>(null)
+  const [submitted, setSubmitted] = useState(false)
   const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -35,11 +35,10 @@ export default function ForgotPasswordPage() {
         return
       }
 
-      // Mock: show token directly instead of sending email
-      setToken(data.token)
+      setSubmitted(true)
       toast({
-        title: 'Токен создан',
-        description: 'Используйте токен для сброса пароля (см. ниже)',
+        title: 'Запрос принят',
+        description: 'Проверьте вашу почту',
       })
     } catch {
       toast({
@@ -52,13 +51,41 @@ export default function ForgotPasswordPage() {
     }
   }
 
+  if (submitted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4">
+        <Card className="w-full max-w-md bg-slate-900/80 border-slate-800 text-white">
+          <CardHeader>
+            <CardTitle className="text-2xl">Проверьте почту</CardTitle>
+            <CardDescription className="text-slate-400">
+              Если аккаунт с таким email существует, мы отправили ссылку для сброса пароля
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="p-3 bg-slate-800 rounded border border-slate-700 mb-4">
+              <p className="text-sm text-slate-300">
+                В режиме разработки токен выводится в консоль сервера.
+                Для локального тестирования используйте его для перехода к сбросу пароля.
+              </p>
+            </div>
+            <div className="text-center">
+              <Link href="/login" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+                Вернуться ко входу →
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4">
       <Card className="w-full max-w-md bg-slate-900/80 border-slate-800 text-white">
         <CardHeader>
           <CardTitle className="text-2xl">Восстановление пароля</CardTitle>
           <CardDescription className="text-slate-400">
-            Введите email для получения токена сброса
+            Введите email для получения ссылки сброса
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -75,22 +102,8 @@ export default function ForgotPasswordPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Отправка...' : 'Получить токен'}
+              {loading ? 'Отправка...' : 'Отправить ссылку'}
             </Button>
-            {token && (
-              <div className="p-3 bg-slate-800 rounded border border-slate-700">
-                <p className="text-sm text-slate-400 mb-1">Ваш токен (скопируйте):</p>
-                <code className="text-xs text-green-400 break-all">{token}</code>
-                <div className="mt-2">
-                  <Link
-                    href={`/reset-password?token=${token}`}
-                    className="text-sm text-blue-400 hover:text-blue-300"
-                  >
-                    Перейти к сбросу пароля →
-                  </Link>
-                </div>
-              </div>
-            )}
             <div className="text-center text-sm text-slate-400">
               <Link href="/login" className="hover:text-white transition-colors">
                 Вернуться ко входу

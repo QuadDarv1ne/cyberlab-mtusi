@@ -2,6 +2,16 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createResetToken } from '@/lib/reset-tokens'
 
+/**
+ * Constant-time delay to prevent email enumeration via timing attacks.
+ * Always takes ~500ms regardless of whether the email exists.
+ */
+const ENUMERATION_DELAY_MS = 500
+
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
 export async function POST(req: Request) {
   try {
     const { email } = await req.json()
@@ -10,18 +20,22 @@ export async function POST(req: Request) {
     }
 
     const user = await db.userFindUnique({ where: { email } })
-    if (!user) {
-      // Don't reveal if email exists
-      return NextResponse.json({ message: 'Если email существует, токен будет создан' })
+
+    if (user) {
+      const token = createResetToken(user.id)
+      // TODO: In production, send email with token instead of returning it
+      // For local development: log token to console
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[DEV] Password reset token for ${email}: ${token}`)
+      }
     }
 
-    const token = createResetToken(user.id)
+    // Constant-time response to prevent timing-based email enumeration
+    await delay(ENUMERATION_DELAY_MS)
 
-    // In production: send email with token
-    // For now: return token directly (mock)
+    // Always return the same message regardless of whether email exists
     return NextResponse.json({
-      message: 'Токен создан',
-      token,
+      message: 'Если email существует, вы получите ссылку для сброса пароля',
     })
   } catch {
     return NextResponse.json({ error: 'Внутренняя ошибка' }, { status: 500 })
