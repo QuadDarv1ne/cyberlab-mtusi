@@ -10,6 +10,8 @@ services:
   postgres:
     image: postgres:17-alpine
     container_name: cyberlab-postgres
+    profiles:
+      - postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -30,6 +32,8 @@ services:
   mongodb:
     image: mongo:8
     container_name: cyberlab-mongodb
+    profiles:
+      - mongodb
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER:-root}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-root}
@@ -52,15 +56,15 @@ services:
       dockerfile: Dockerfile
     container_name: cyberlab-app
     environment:
-      NODE_ENV: ${NODE_ENV:-development}
-      DATABASE_URL: ${DATABASE_URL:-file:./db/custom.db}
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL:-}
+      POSTGRES_URL: ${POSTGRES_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@cyberlab-postgres:5432/${POSTGRES_DB:-cyberlab}?schema=public}
       MONGODB_URI: ${MONGODB_URI:-mongodb://${MONGODB_USER:-root}:${MONGODB_PASSWORD:-root}@cyberlab-mongodb:27017/cyberlab?authSource=admin}
-      DATABASE_URL: ${POSTGRES_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@cyberlab-postgres:5432/${POSTGRES_DB:-cyberlab}?schema=public}
       PORT: ${PORT:-3000}
     ports:
       - "${PORT:-3000}:${PORT:-3000}"
     volumes:
-      - sqlite_data:/app/prisma/db  # Для SQLite
+      - sqlite_data:/app/prisma/db
     depends_on:
       postgres:
         condition: service_healthy
@@ -71,7 +75,6 @@ services:
       - mongodb
     networks:
       - cyberlab-net
-    command: sh -c "npm install && npm run dev"
 
 # --- Volumes ---
 volumes:
