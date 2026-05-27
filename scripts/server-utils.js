@@ -29,7 +29,7 @@ async function findAvailablePort(startPort, maxAttempts = 10) {
     const available = await isPortAvailable(port)
     if (available) return port
   }
-  return startPort
+  throw new Error(`No available port found in range ${startPort}-${startPort + maxAttempts - 1}`)
 }
 
 /**

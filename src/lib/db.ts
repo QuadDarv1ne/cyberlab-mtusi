@@ -31,7 +31,6 @@ if (globalForDb.adapter) {
   // Auto-connect on first access
   adapter.connect().catch((err) => {
     logger.error(`[db] Failed to connect to ${dbType}:`, err.message)
-    throw err
   })
 
   globalForDb.adapter = adapter
