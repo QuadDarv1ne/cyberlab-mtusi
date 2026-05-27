@@ -35,9 +35,14 @@ export function detectDatabaseType(): DbType {
 
   // 4. Fallback: check if SQLite file exists (backwards compatible)
   try {
-    const sqlitePath = join(process.cwd(), 'prisma', 'db', 'custom.db')
-    if (existsSync(sqlitePath)) {
-      return 'sqlite'
+    const possiblePaths = [
+      join(process.cwd(), 'prisma', 'db', 'custom.db'),
+      join(process.cwd(), '..', '..', 'prisma', 'db', 'custom.db'),
+    ]
+    for (const sqlitePath of possiblePaths) {
+      if (existsSync(sqlitePath)) {
+        return 'sqlite'
+      }
     }
   } catch {
     // Ignore errors

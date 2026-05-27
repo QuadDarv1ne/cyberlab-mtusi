@@ -35,14 +35,16 @@ export default function CyberLab() {
   const [progressRecords, setProgressRecords] = useState<ProgressRecord[]>([])
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [darkMode, setDarkMode] = useState(() => {
+  const [darkMode, setDarkMode] = useState(false)
+
+  useEffect(() => {
     try {
       const saved = localStorage.getItem('cyberlab-dark-mode')
-      return saved === 'true'
+      if (saved === 'true') setDarkMode(true)
     } catch {
-      return false
+      // localStorage unavailable
     }
-  })
+  }, [])
   const [submitting, setSubmitting] = useState<Record<string, boolean>>({})
   const [catalogSearch, setCatalogSearch] = useState('')
   const [catalogCategoryFilter, setCatalogCategoryFilter] = useState<string>('all')

@@ -55,18 +55,20 @@ services:
       NODE_ENV: ${NODE_ENV:-development}
       DATABASE_URL: ${DATABASE_URL:-file:./db/custom.db}
       MONGODB_URI: ${MONGODB_URI:-mongodb://${MONGODB_USER:-root}:${MONGODB_PASSWORD:-root}@cyberlab-mongodb:27017/cyberlab?authSource=admin}
-      POSTGRES_URL: ${POSTGRES_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@cyberlab-postgres:5432/${POSTGRES_DB:-cyberlab}?schema=public}
+      DATABASE_URL: ${POSTGRES_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@cyberlab-postgres:5432/${POSTGRES_DB:-cyberlab}?schema=public}
       PORT: ${PORT:-3000}
     ports:
       - "${PORT:-3000}:${PORT:-3000}"
     volumes:
-      - ./:/app
-      - sqlite_data:/app/db  # Для SQLite
+      - sqlite_data:/app/prisma/db  # Для SQLite
     depends_on:
       postgres:
         condition: service_healthy
       mongodb:
         condition: service_healthy
+    profiles:
+      - postgres
+      - mongodb
     networks:
       - cyberlab-net
     command: sh -c "npm install && npm run dev"
