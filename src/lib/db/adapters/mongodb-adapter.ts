@@ -384,7 +384,10 @@ export class MongoAdapter extends DatabaseAdapter {
 
         return fn({
           flagSubmission: {
-            findFirst: (args: { where: Record<string, unknown> }) => txCols.flagSubmissions.findOne(args.where),
+            findFirst: async (args: { where: Record<string, unknown> }) => {
+              const doc = await txCols.flagSubmissions.findOne(args.where)
+              return doc ? { ...doc, id: doc._id.toString() } : null
+            },
             create: async (args: { data: Record<string, unknown> }) => {
               const result = await txCols.flagSubmissions.insertOne(args.data)
               return { ...args.data, id: result.insertedId.toString() }
@@ -395,12 +398,16 @@ export class MongoAdapter extends DatabaseAdapter {
             },
           },
           labFlag: {
-            findFirst: (args: { where: Record<string, unknown> }) => txCols.labFlags.findOne(args.where),
+            findFirst: async (args: { where: Record<string, unknown> }) => {
+              const doc = await txCols.labFlags.findOne(args.where)
+              return doc ? { ...doc, id: doc._id.toString() } : null
+            },
           },
           labProgress: {
-            findUnique: (args: { where: { studentId_labId: { studentId: string; labId: string } } }) => {
+            findUnique: async (args: { where: { studentId_labId: { studentId: string; labId: string } } }) => {
               const { studentId, labId } = args.where.studentId_labId
-              return txCols.labProgress.findOne({ studentId, labId })
+              const doc = await txCols.labProgress.findOne({ studentId, labId })
+              return doc ? { ...doc, id: doc._id.toString() } : null
             },
             update: async (args: { where: { id: string }; data: Record<string, unknown> }) => {
               await txCols.labProgress.updateOne(
@@ -421,8 +428,11 @@ export class MongoAdapter extends DatabaseAdapter {
               const lab = await txCols.labs.findOne({ _id: this.toObjectId(args.where.id) })
               if (!lab) return null
               if (args.include?.flags) {
-                const flags = await txCols.labFlags.find({ labId: lab._id.toString() }).toArray()
-                lab.flags = flags
+                const flags = await txCols.labFlags
+                  .find({ labId: lab._id.toString() })
+                  .project({ flagValue: 0 })
+                  .toArray()
+                lab.flags = flags.map((f: { _id: { toString(): string } }) => ({ ...f, id: f._id.toString() }))
               }
               return { ...lab, id: lab._id.toString() }
             },

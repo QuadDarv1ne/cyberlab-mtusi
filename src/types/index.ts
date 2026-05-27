@@ -47,6 +47,8 @@ export interface RecentSubmission {
   id: string
   studentId: string
   labId: string
+  studentName: string
+  labTitle: string
   flagKey: string
   correct: boolean
   createdAt: string
