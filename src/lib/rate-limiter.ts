@@ -73,16 +73,21 @@ export function getClientIp(request: Request): string {
     return realIp
   }
 
-  // Use a cookie-based client ID so each browser tab gets its own bucket
+  // Use a persistent client ID set by middleware (cookie or forwarded header)
+  const clientId = request.headers.get('x-client-id')
+  if (clientId) {
+    return `anon:${clientId}`
+  }
+
+  // Fallback: check for clid cookie directly
   const cookieHeader = request.headers.get('cookie') ?? ''
   const match = cookieHeader.match(/(?:^|;\s*)clid=([^;]+)/)
   if (match) {
     return `anon:${match[1]}`
   }
 
-  // Generate a new unique ID; caller should set the cookie in the response
-  const newId = crypto.randomUUID()
-  return `anon:${newId}`
+  // Last resort: generate unique ID per request (no persistent identity available)
+  return `anon:${crypto.randomUUID()}`
 }
 
 

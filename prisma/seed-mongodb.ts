@@ -68,7 +68,7 @@ async function seed() {
         goal: 'Научиться проводить разведку с использованием OSINT-методов и инструментов',
         tools: 'Maltego, theHarvester, Shodan',
         difficulty: 'easy',
-        category: 'recon',
+        category: 'reconnaissance',
         order: 1,
         flags: [
           { flagKey: 'flag-1-email', flagValue: 'CYBER{found_email@company.ru}', points: 10, hint: 'Используйте theHarvester для поиска email' },
@@ -98,7 +98,7 @@ async function seed() {
         goal: 'Научиться находить и эксплуатировать SQL-инъекции',
         tools: 'SQLmap, Burp Suite, MySQL',
         difficulty: 'medium',
-        category: 'web',
+        category: 'web_security',
         order: 3,
         flags: [
           { flagKey: 'flag-3-login', flagValue: 'CYBER{auth_bypassed_via_sqli}', points: 20, hint: "Попробуйте ' OR 1=1 --" },
@@ -113,7 +113,7 @@ async function seed() {
         goal: 'Провести полный аудит веб-приложения',
         tools: 'Burp Suite, OWASP ZAP, Nikto',
         difficulty: 'hard',
-        category: 'web',
+        category: 'web_security',
         order: 4,
         flags: [
           { flagKey: 'flag-4-xss', flagValue: 'CYBER{xss_payload_executed}', points: 15, hint: 'Проверьте поля ввода на XSS' },
@@ -129,7 +129,7 @@ async function seed() {
         goal: 'Изучить механизмы спуфинга в локальных сетях',
         tools: 'Ettercap, Bettercap, Wireshark',
         difficulty: 'hard',
-        category: 'network',
+        category: 'network_attacks',
         order: 5,
         flags: [
           { flagKey: 'flag-5-arp', flagValue: 'CYBER{arp_poisoning_success}', points: 20, hint: 'Используйте Ettercap для ARP спуфинга' },

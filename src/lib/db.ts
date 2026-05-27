@@ -34,9 +34,7 @@ if (globalForDb.adapter) {
     throw err
   })
 
-  if (process.env.NODE_ENV !== 'production') {
-    globalForDb.adapter = adapter
-  }
+  globalForDb.adapter = adapter
 }
 
 // Re-export as `db` for backwards compatibility with all API routes
