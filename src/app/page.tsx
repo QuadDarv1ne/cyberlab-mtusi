@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import {
   Shield, FileText, Menu, X, Moon, Sun, GraduationCap
 } from 'lucide-react'
@@ -161,13 +161,25 @@ export default function CyberLab() {
 
   useEffect(() => {
     const init = async () => {
-      await fetchStudents()
-      await fetchLabs()
-      await fetchDashboard()
+      const results = await Promise.allSettled([
+        fetchStudents(),
+        fetchLabs(),
+        fetchDashboard(),
+      ])
+
+      const failures = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+      if (failures.length > 0) {
+        logger.error(`Failed to load ${failures.length} of 3 data sources`)
+        toast({
+          title: 'Частичная загрузка',
+          description: 'Некоторые данные не загрузились. Попробуйте обновить страницу.',
+          variant: 'destructive',
+        })
+      }
       setLoading(false)
     }
     init()
-  }, [fetchLabs, fetchDashboard, fetchStudents])
+  }, [fetchLabs, fetchDashboard, fetchStudents, toast])
 
   useEffect(() => {
     if (activeTab === 'blog') {
