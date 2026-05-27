@@ -10,511 +10,1122 @@
 
 ## Содержание
 
-- [1. Выбор платформы](#1-выбор-платформы)
-- [2. Локальный сервер в LAN (ВУЗ)](#2-локальный-сервер-в-lan-вуз)
-- [3. Docker Compose (VPS)](#3-docker-compose-vps)
-- [4. VPS — ручная установка](#4-vps--ручная-установка)
-- [5. Railway](#5-railway)
-- [6. Render](#6-render)
-- [7. Vercel + MongoDB Atlas](#7-vercel--mongodb-atlas)
-- [8. Российские хостинги](#8-российские-хостинги)
+- [Таблица быстрого выбора платформы](#таблица-быстрого-выбора-платформы)
+- [Все переменные окружения](#все-переменные-окружения)
+- [SQLite vs PostgreSQL — когда что использовать](#sqlite-vs-postgresql--когда-что-использовать)
+- [Пошаговые гайды](#пошаговые-гайды)
+  - [1. Vercel + Supabase — 5 мин](#1-vercel--supabase--5-мин)
+  - [2. Railway (с SQLite) — 3 мин](#2-railway-с-sqlite--3-мин)
+  - [3. Render — 10 мин](#3-render--10-мин)
+  - [4. VPS + Docker — 30 мин](#4-vps--docker--30-мин)
+  - [5. Docker Swarm — 1–2 часа](#5-docker-swarm--12-часа)
+  - [6. Netlify — 5 мин](#6-netlify--5-мин)
+  - [7. Yandex Cloud — 20 мин](#7-yandex-cloud--20-мин)
+- [Бэкапы](#бэкапы)
+- [Мониторинг (Prometheus + Grafana)](#мониторинг-prometheus--grafana)
+- [CI/CD через GitHub Actions](#cicd-через-github-actions)
+- [Чеклист деплоя](#чеклист-деплоя)
+- [Troubleshooting и rollback](#troubleshooting-и-rollback)
 
 ---
 
-## 1. Выбор платформы
+## Таблица быстрого выбора платформы
 
-| Платформа | Сложность | Бесплатно? | База данных | Подходит для |
-|-----------|-----------|------------|-------------|--------------|
-| **Локальный сервер (LAN)** | ★☆☆ | Да | SQLite | Внутривузовское использование |
-| **Docker Compose** | ★★☆ | Нет (нужен VPS) | Любая | Продакшен на VPS |
-| **VPS (ручная)** | ★★★ | Нет | Любая | Полный контроль |
-| **Railway** | ★☆☆ | Есть лимиты | PostgreSQL | Быстрый старт |
-| **Render** | ★★☆ | Есть лимиты | PostgreSQL | Быстрый старт |
-| **Vercel + Atlas** | ★★☆ | Есть лимиты | MongoDB Atlas | Бесплатно (с ограничениями) |
-
-### Требования к окружению
-
-- **Node.js 18+** (рекомендуется 20+)
-- **npm** или **bun**
-- **512 MB RAM** минимум (рекомендуется 1+ GB)
-- **1 vCPU** минимум
+| Платформа | Сложность | Время | Бесплатно? | RAM | База данных | Трафик | Домен |
+|-----------|-----------|-------|------------|-----|-------------|--------|-------|
+| **Vercel + Supabase** | ★☆☆ | 5 мин | Да (Hobby) | 1 GB (Serverless) | PostgreSQL через Supabase | 100 GB/мес | `<project>.vercel.app` |
+| **Railway** | ★☆☆ | 3 мин | Да ($5 кредит) | 512 MB | SQLite (файл) | 1 TB/мес | `<project>.railway.app` |
+| **Render** | ★★☆ | 10 мин | Да (Free) | 512 MB | PostgreSQL | 100 GB/мес | `<project>.onrender.com` |
+| **VPS + Docker** | ★★☆ | 30 мин | Нет (от $5) | ∞ | Любая | ∞ | Свой |
+| **Docker Swarm** | ★★★ | 1–2 ч | Нет (от $15) | ∞ | Любая (кластер) | ∞ | Свой (балансировка) |
+| **Netlify** | ★☆☆ | 5 мин | Да (Free) | 512 MB (Serverless) | Supabase / Atlas | 100 GB/мес | `<project>.netlify.app` |
+| **Yandex Cloud** | ★★☆ | 20 мин | 4000 ₽ на старте | 1+ GB | PostgreSQL Managed | 5+ GB/мес | Свой (YMQ) |
 
 ---
 
-## 2. Локальный сервер в LAN (ВУЗ)
+## Все переменные окружения
 
-Самый простой способ — запустить на компьютере в локальной сети университета.
+### Обязательные (хотя бы одна из БД-строк)
 
-### Шаги
+```env
+# ==========================================
+# База данных (укажите одну)
+# ==========================================
+
+# SQLite (по умолчанию)
+# DATABASE_URL=file:./db/custom.db
+
+# PostgreSQL
+# DATABASE_URL=postgresql://user:pass@host:5432/dbname?schema=public
+
+# MongoDB
+# MONGODB_URI=mongodb://user:pass@host:27017/dbname?authSource=admin
+```
+
+### Опциональные
+
+```env
+# ==========================================
+# Принудительный выбор типа БД
+# (если не указать — автоопределение по DATABASE_URL)
+# ==========================================
+# DB_TYPE=sqlite
+# DB_TYPE=postgresql
+# DB_TYPE=mongodb
+
+# ==========================================
+# Порт (автоопределение: сканирует с 3000 вверх)
+# ==========================================
+# PORT=3000
+
+# ==========================================
+# Окружение
+# ==========================================
+# NODE_ENV=development
+# NODE_ENV=production
+
+# ==========================================
+# PostgreSQL (маппинг в DATABASE_URL)
+# ==========================================
+# POSTGRES_USER=postgres
+# POSTGRES_PASSWORD=postgres
+# POSTGRES_DB=cyberlab
+# POSTGRES_PORT=5432
+# POSTGRES_HOST=localhost
+
+# ==========================================
+# MongoDB (маппинг в MONGODB_URI)
+# ==========================================
+# MONGODB_USER=root
+# MONGODB_PASSWORD=root
+# MONGODB_PORT=27017
+# MONGODB_HOST=localhost
+
+# ==========================================
+# Supabase (только для Vercel/Supabase)
+# ==========================================
+# SUPABASE_URL=https://project.supabase.co
+# SUPABASE_KEY=anon-public-key
+# NEXT_PUBLIC_SUPABASE_URL=https://project.supabase.co
+# NEXT_PUBLIC_SUPABASE_ANON_KEY=anon-public-key
+```
+
+### Для Yandex Cloud
+
+```env
+YC_FOLDER_ID=b1gxxxxxxxxxx
+YC_ZONE=ru-central1-a
+YC_SUBNET_ID=e9bxxxxxxxxxx
+YC_SERVICE_ACCOUNT_ID=ajexxxxxxxxxx
+YC_IMAGE_ID=fd8xxxxxxxxxx
+```
+
+---
+
+## SQLite vs PostgreSQL — когда что использовать
+
+| Критерий | SQLite | PostgreSQL |
+|----------|--------|------------|
+| **Пользователей** | 1–10 | 10+ |
+| **Одновременных записей** | 1 (блокировка на запись) | Много (MVCC) |
+| **Надёжность** | Низкая (файл) | Высокая (WAL, PITR) |
+| **Бэкапы** | Копировать файл | `pg_dump` |
+| **Размер** | Малый (встроенная) | Требует сервер |
+| **Простота** | ★★★★★ (нулевая настройка) | ★★★ (установка + настройка) |
+| **Где использовать** | Разработка, 1–2 студента | Продакшен, группа >10 |
+
+### Миграция с SQLite на PostgreSQL
 
 ```bash
-# 1. Клонировать репозиторий
-git clone https://github.com/QuadDarv1ne/cyberlab-mtusi.git cyberlab
-cd cyberlab
+# 1. Установить pgloader
+sudo apt install pgloader                          # Linux
+brew install pgloader                               # macOS
 
-# 2. Установить зависимости
-npm install
+# 2. Выгрузить SQLite
+sqlite3 db/custom.db ".dump" > dump.sql
 
-# 3. Настроить базу данных (SQLite — по умолчанию)
+# 3. Импорт в PostgreSQL
+pgloader db/custom.db postgresql://user:pass@localhost/cyberlab
+
+# 4. Сменить DATABASE_URL в .env
+# DATABASE_URL=postgresql://user:pass@localhost:5432/cyberlab?schema=public
+
+# 5. Пересоздать схему Prisma
+npx prisma db push
+
+# 6. Пересеять данные (если pgloader не сработал)
+npm run db:seed
+
+# 7. Проверить
+npm run dev
+```
+
+### Миграция с SQLite на MongoDB
+
+```bash
+# 1. Установить mongoimport
+# https://www.mongodb.com/try/download/database-tools
+
+# 2. Экспорт SQLite в JSON
+sqlite3 db/custom.db "SELECT * FROM Lab;" -json > labs.json
+sqlite3 db/custom.db "SELECT * FROM Student;" -json > students.json
+# ... остальные таблицы
+
+# 3. Импорт в MongoDB
+mongoimport --uri="mongodb://localhost:27017/cyberlab" --collection=labs --file=labs.json
+mongoimport --uri="mongodb://localhost:27017/cyberlab" --collection=students --file=students.json
+
+# 4. Пересеять флаги
+npm run db:seed:mongo
+```
+
+---
+
+## Пошаговые гайды
+
+---
+
+### 1. Vercel + Supabase — 5 мин
+
+Бесплатная связка: фронтенд на Vercel, база на Supabase (PostgreSQL).
+
+#### Шаги
+
+**Supabase:**
+
+```bash
+# 1. Зарегистрироваться на https://supabase.com
+# 2. Нажать "New project"
+# 3. Запомнить Database Password
+# 4. После создания открыть "Project Settings" → "Database"
+#    — скопировать Connection string (URI)
+```
+
+**Vercel:**
+
+```bash
+# 5. Зарегистрироваться на https://vercel.com
+# 6. Нажать "Add New" → "Project"
+# 7. Импортировать GitHub-репозиторий QuadDarv1ne/cyberlab-mtusi
+```
+
+**Настройка переменных:**
+
+В Vercel → Project Settings → Environment Variables добавить:
+
+```env
+DATABASE_URL=postgresql://postgres:password@db.xxxxx.supabase.co:5432/postgres?schema=public
+```
+
+**Build & Deploy:**
+
+```bash
+# Vercel определит Next.js автоматически.
+# Настройки по умолчанию:
+#   Build Command:   next build
+#   Output Directory: .next
+```
+
+После деплоя открыть Shell проекта Vercel и выполнить:
+
+```bash
 npx prisma generate
 npx prisma db push
 npm run db:seed
-
-# 4. Запустить
-npm run build
-npm run start:auto
 ```
 
-Сервер автоматически найдёт свободный порт (начиная с 3000).
+#### Результат
 
-### Подключение других пользователей
+`https://cyberlab.vercel.app` — работает, HTTPS, PostgreSQL.
 
-1. Узнайте IP-адрес сервера в локальной сети:
-   ```bash
-   # Windows
-   ipconfig
-   # Linux/macOS
-   hostname -I
-   ```
-
-2. Откройте порт в брандмауэре:
-   ```bash
-   # Windows (от имени администратора)
-   netsh advfirewall firewall add rule name="CyberLab" dir=in action=allow protocol=TCP localport=3000
-
-   # Linux (Ubuntu/Debian)
-   sudo ufw allow 3000
-   ```
-
-3. Сообщите студентам адрес: `http://192.168.x.x:3000`
-
-> **Важно:** SQLite не поддерживает одновременные записи от многих пользователей. Для группы >10 человек используйте PostgreSQL или MongoDB.
-
-### Запуск как служба (чтобы не закрывать терминал)
-
-<details>
-<summary>Windows (NSSM)</summary>
-
-```bash
-# Установить NSSM: https://nssm.cc/download
-nssm install CyberLab "C:\Program Files\nodejs\node.exe" "C:\путь\к\проекту\scripts\start-server.js"
-nssm set CyberLab AppDirectory "C:\путь\к\проекту"
-nssm start CyberLab
-```
-</details>
-
-<details>
-<summary>Linux (systemd)</summary>
-
-```ini
-# /etc/systemd/system/cyberlab.service
-[Unit]
-Description=CyberLab MTUSI
-After=network.target
-
-[Service]
-Type=simple
-User=www-data
-WorkingDirectory=/opt/cyberlab
-ExecStart=/usr/bin/node scripts/start-server.js
-Restart=always
-RestartSec=5
-Environment=NODE_ENV=production
-Environment=PORT=3000
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now cyberlab
-```
-</details>
+> **Важно:** Prisma + PostgreSQL — миграции применяйте вручную через Shell.
+> На бесплатном тире Vercel — 100 GB трафика/мес, 6000 минут сборки.
 
 ---
 
-## 3. Docker Compose (VPS)
+### 2. Railway (с SQLite) — 3 мин
 
-Рекомендуемый способ для продакшена. Изолирует сервисы и упрощает обновление.
+Railway поддерживает персистентные volume'ы — SQLite работает.
 
-### Предварительные требования
-
-- **Docker** и **Docker Compose** установлены на сервере
-- **Git** для клонирования репозитория
-
-### Шаги
+#### Шаги
 
 ```bash
-# 1. Клонировать репозиторий на сервер
-git clone https://github.com/QuadDarv1ne/cyberlab-mtusi.git cyberlab
-cd cyberlab
-
-# 2. Создать .env файл (скопировать из .env.example)
-cp .env.example .env
+# 1. Зарегистрироваться на https://railway.app (GitHub OAuth)
+# 2. Нажать "New Project" → "Deploy from GitHub"
+# 3. Выбрать репозиторий QuadDarv1ne/cyberlab-mtusi
 ```
 
-### Вариант A: PostgreSQL (рекомендуется)
+**Настройка:**
 
-Отредактируйте `.env`:
+Railway проекты → Variables:
+
 ```env
-DATABASE_URL=postgresql://postgres:postgres@cyberlab-postgres:5432/cyberlab?schema=public
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=cyberlab
+NODE_ENV=production
+DATABASE_URL=file:./db/custom.db
+PORT=3000
 ```
 
-Обязательно смените пароль в production!
+Настройки деплоя (Railway → Settings → Deploy):
 
-```bash
-# Собрать образ и запустить
-docker compose build app
-docker compose --profile postgres up -d
+| Параметр | Значение |
+|----------|----------|
+| Build Command | `npm install && npx prisma generate && npx prisma db push && npm run db:seed && npm run build` |
+| Start Command | `node scripts/start-server.js` |
+| Root Directory | `/` |
+| Healthcheck Path | `/` |
 
-# Применить схему БД
-docker compose exec app npx prisma db push
+**Persistent Volume (чтобы SQLite не сбрасывался при редеплое):**
 
-# Заполнить начальными данными
-docker compose exec app npm run db:seed
+Railway → Volumes → Add Volume:
+- Mount Path: `/app/prisma/db`
+- Размер: 1 GB (бесплатно)
 
-# Посмотреть логи
-docker compose logs -f
-```
+Railway автоматически смонтирует volume к `/app/prisma/db`.
 
-### Вариант B: MongoDB
+> **Внимание:** Railway даёт $5 бесплатного кредита. SQLite на volume
+> считается как storage ($0.2/GB/мес). Этого хватит на годы.
 
-Отредактируйте `.env`:
-```env
-MONGODB_URI=mongodb://root:root@cyberlab-mongodb:27017/cyberlab?authSource=admin
-MONGODB_USER=root
-MONGODB_PASSWORD=root
-```
+#### Результат
 
-```bash
-docker compose build app
-docker compose --profile mongodb up -d
-docker compose exec app npx prisma db push
-docker compose exec app npm run db:seed:mongo
-```
-
-### Вариант C: SQLite (только для разработки)
-
-```bash
-docker compose up -d --profile ""
-docker compose exec app npx prisma db push
-docker compose exec app npm run db:seed
-```
-
-### Подключение пользователей
-
-Приложение будет доступно на порту 3000 вашего сервера:
-`http://<IP-сервера>:3000`
-
-### Настройка Caddy для HTTPS (рекомендуется)
-
-Раскомментируйте/настройте `Caddyfile`:
-
-```
-your-domain.com {
-    reverse_proxy localhost:3000 {
-        header_up Host {host}
-        header_up X-Forwarded-For {remote_host}
-        header_up X-Real-IP {remote_host}
-    }
-}
-```
-
-```bash
-docker run -d \
-  --name cyberlab-caddy \
-  -p 80:80 -p 443:443 \
-  -v ./Caddyfile:/etc/caddy/Caddyfile \
-  -v caddy_data:/data \
-  caddy:2-alpine
-```
-
-Caddy автоматически получит SSL-сертификат от Let's Encrypt.
+`https://cyberlab.up.railway.app` — работает через 3 минуты.
 
 ---
 
-## 4. VPS — ручная установка
+### 3. Render — 10 мин
 
-Для полного контроля над окружением.
+Render — облачный хостинг с бесплатным тиром (спит после 15 мин простоя).
 
-### Шаги (Ubuntu 22.04+/Debian 12)
+#### Шаги
 
 ```bash
-# 1. Установить Node.js 20+
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-apt-get install -y nodejs git
+# 1. Зарегистрироваться на https://render.com (GitHub OAuth)
+```
 
-# 2. Клонировать проект
+**Web Service:**
+
+Render Dashboard → New + → Web Service → Connect GitHub repo.
+
+Настройки:
+
+| Параметр | Значение |
+|----------|----------|
+| Name | `cyberlab` |
+| Region | `Frankfurt (EU)` — ближайший к РФ |
+| Runtime | `Node` |
+| Branch | `main` |
+| Build Command | `npm install && npx prisma generate && npx prisma db push && npm run db:seed && npm run build` |
+| Start Command | `node scripts/start-server.js` |
+| Plan | **Free** (512 MB RAM, 0.1 CPU) |
+
+**PostgreSQL:**
+
+Render Dashboard → New + → PostgreSQL → Create.
+
+После создания скопировать `Internal Database URL` и добавить в переменные Web Service:
+
+```env
+DATABASE_URL=<Internal Database URL>
+NODE_ENV=production
+```
+
+#### Результат
+
+`https://cyberlab.onrender.com` — PostgreSQL, авто-деплой из GitHub.
+
+> Render автоматически пересобирает при пуше в main.
+> Бесплатный Web Service "засыпает" — первый запрос после простоя
+> выполняется 10–30 секунд (холодный старт).
+
+---
+
+### 4. VPS + Docker — 30 мин
+
+Полноценный продакшен на собственном сервере.
+
+#### Шаги
+
+```bash
+# 1. Купить VPS (Ubuntu 22.04 / Debian 12)
+#    Рекомендации: Timeweb Cloud, Reg.ru, Hetzner, DigitalOcean
+#    Минимум: 1 vCPU, 1 GB RAM, 20 GB SSD
+
+# 2. Подключиться по SSH
+ssh root@<IP-сервера>
+
+# 3. Установить Docker и Compose
+apt-get update && apt-get install -y ca-certificates curl
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+chmod a+r /etc/apt/keyrings/docker.asc
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+# 4. Клонировать проект
 git clone https://github.com/QuadDarv1ne/cyberlab-mtusi.git /opt/cyberlab
 cd /opt/cyberlab
 
-# 3. Установить зависимости и собрать
-npm install
-npx prisma generate
-npx prisma db push
-npm run db:seed
-
-# 4. Настроить PostgreSQL (рекомендуется) или MongoDB
-apt-get install -y postgresql postgresql-contrib
-sudo -u postgres createuser cyberlab -P
-sudo -u postgres createdb cyberlab -O cyberlab
+# 5. Создать .env
+cp .env.example .env
 ```
-В `.env` укажите:
+
+Отредактировать `.env`:
+
 ```env
-DATABASE_URL=postgresql://cyberlab:пароль@localhost:5432/cyberlab?schema=public
+DATABASE_URL=postgresql://postgres:my_strong_password@cyberlab-postgres:5432/cyberlab?schema=public
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=my_strong_password
+POSTGRES_DB=cyberlab
 NODE_ENV=production
 PORT=3000
 ```
 
 ```bash
-# 5. Собрать production-сборку
+# 6. Собрать и запустить
+docker compose build app
+docker compose --profile postgres up -d
+
+# 7. Применить схему и посеять данные
+docker compose exec app npx prisma db push
+docker compose exec app npm run db:seed
+
+# 8. Настроить Caddy (HTTPS)
+```
+
+Создать `/opt/cyberlab/Caddyfile`:
+
+```
+cyberlab.example.com {
+    reverse_proxy app:3000
+}
+```
+
+Обновить `docker-compose.yml` — добавить сервис Caddy:
+
+```yaml
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: cyberlab-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+    networks:
+      - cyberlab-net
+    depends_on:
+      - app
+
+volumes:
+  caddy_data:
+```
+
+```bash
+# 9. Перезапустить с Caddy
+docker compose up -d
+```
+
+#### Обновление (pull + rebuild)
+
+```bash
+cd /opt/cyberlab
+git pull
+docker compose build app
+docker compose up -d
+docker compose exec app npx prisma db push
+```
+
+#### Результат
+
+`https://cyberlab.example.com` — HTTPS, PostgreSQL, автостарт, логи.
+
+---
+
+### 5. Docker Swarm — 1–2 часа
+
+Кластеризация для высокой доступности. Подходит, если платформой
+пользуется вся кафедра и нужна отказоустойчивость.
+
+#### Архитектура
+
+```
+          ┌──────────┐
+          │  Caddy    │  ← балансировщик (manager node)
+          │  (VIP)    │
+          └────┬─────┘
+       ┌───────┼───────┐
+       ▼       ▼       ▼
+   ┌──────┐ ┌──────┐ ┌──────┐
+   │ App 1 │ │ App 2 │ │ App 3 │  ← 3 реплики (worker nodes)
+   └──┬───┘ └──┬───┘ └──┬───┘
+      └────────┼────────┘
+               ▼
+          ┌──────────┐
+          │PostgreSQL│  ← внешний или Replication Set
+          │ MongoDB  │
+          └──────────┘
+```
+
+#### Шаги
+
+```bash
+# 1. Подготовить 3+ сервера (Ubuntu 22.04)
+#    manager1 (4 GB RAM, 2 vCPU)
+#    worker1  (2 GB RAM, 1 vCPU)
+#    worker2  (2 GB RAM, 1 vCPU)
+
+# 2. Установить Docker на всех
+curl -fsSL https://get.docker.com | bash
+
+# 3. Инициализировать Swarm на manager
+docker swarm init --advertise-addr <MANAGER_IP>
+
+# 4. Добавить worker'ов (вывод из шага 3)
+docker swarm join --token <TOKEN> <MANAGER_IP>:2377
+
+# 5. На manager: создать стек
+git clone https://github.com/QuadDarv1ne/cyberlab-mtusi.git /opt/cyberlab
+cd /opt/cyberlab
+```
+
+Создать `docker-stack.yml`:
+
+```yaml
+version: '3.8'
+
+services:
+  app:
+    image: cyberlab-app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://postgres:pass@postgres:5432/cyberlab?schema=public
+      NODE_ENV: production
+    ports:
+      - "3000"
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+    networks:
+      - cyberlab-net
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: cyberlab
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+    networks:
+      - cyberlab-net
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+    deploy:
+      replicas: 2
+      placement:
+        constraints: [node.role == manager]
+    networks:
+      - cyberlab-net
+
+networks:
+  cyberlab-net:
+    driver: overlay
+
+volumes:
+  postgres_data:
+  caddy_data:
+```
+
+```bash
+# 6. Собрать образ
+docker build -t cyberlab-app:latest .
+
+# 7. Развернуть стек
+docker stack deploy -c docker-stack.yml cyberlab
+
+# 8. Проверить
+docker stack services cyberlab
+docker service ps cyberlab_app
+
+# 9. Масштабировать
+docker service scale cyberlab_app=5
+```
+
+#### Роллбек
+
+```bash
+# Откатить последнее обновление сервиса
+docker service update --rollback cyberlab_app
+
+# Переключиться на конкретный образ
+docker service update --image cyberlab-app:previous-tag cyberlab_app
+```
+
+#### Результат
+
+Кластер из 3+ нод. При падении любого worker'а трафик идёт на живые.
+При падении manager'а — Caddy на втором manager перехватывает.
+
+---
+
+### 6. Netlify — 5 мин
+
+Netlify — как Vercel, но для статики + serverless-функции.
+
+#### Важно
+
+Netlify работает только с **Next.js статической генерацией (SSG)**.
+API-роуты (`/api/*`) превращаются в Netlify Functions.
+Это накладывает ограничения: Prisma в serverless = холодный старт.
+
+#### Шаги
+
+```bash
+# 1. Зарегистрироваться на https://netlify.com
+# 2. Нажать "Add new site" → "Import an existing project"
+# 3. Подключить GitHub-репозиторий
+```
+
+Настройки сборки:
+
+| Параметр | Значение |
+|----------|----------|
+| Base directory | `/` |
+| Build command | `npm install && npx prisma generate && next build` |
+| Publish directory | `.next` |
+| Functions directory | `netlify/functions` |
+
+**Переменные окружения:**
+
+```env
+DATABASE_URL=postgresql://postgres:pass@db.xxxxx.supabase.co:5432/postgres?schema=public
+NEXT_PUBLIC_NETLIFY=true
+```
+
+**Netlify TOML** — создать `netlify.toml` в корне:
+
+```toml
+[build]
+  command = "npm install && npx prisma generate && npx prisma db push && npm run db:seed && next build"
+  publish = ".next"
+
+[functions]
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+```
+
+> Netlify Functions имеют лимит 10秒 / 10 MB.
+> Для API-тяжёлых операций (dashboard) может не хватить.
+
+#### Результат
+
+`https://cyberlab.netlify.app` — SSG + Netlify Functions + Supabase.
+
+---
+
+### 7. Yandex Cloud — 20 мин
+
+Для развёртывания внутри РФ без риска блокировок.
+
+#### Шаги
+
+```bash
+# 1. Зарегистрироваться на https://cloud.yandex.ru
+# 2. Получить 4000 ₽ на старте (первые 60 дней)
+
+# 3. Установить YC CLI
+curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+yc init
+```
+
+**Создание ВМ:**
+
+```bash
+# 4. Создать виртуальную машину
+yc compute instance create \
+  --name cyberlab \
+  --zone ru-central1-a \
+  --cores 2 \
+  --memory 2 \
+  --create-boot-disk size=20GB,image-folder-id=standard-images,image-family=ubuntu-2204-lts \
+  --network-interface subnet-name=default-ru-central1-a,nat-ip-version=ipv4 \
+  --ssh-key ~/.ssh/id_rsa.pub
+
+# 5. Получить публичный IP
+yc compute instance get cyberlab --format json | jq -r '.network_interfaces[0].primary_v4_address.one_to_one_nat.address'
+```
+
+**Управляемый PostgreSQL:**
+
+```bash
+# 6. Создать кластер PostgreSQL
+yc managed-postgresql cluster create \
+  --name cyberlab-db \
+  --environment production \
+  --network-id <network-id> \
+  --host zone-id=ru-central1-a,subnet-id=<subnet-id> \
+  --user name=cyberlab,password=strong_password \
+  --database name=cyberlab
+
+# 7. Получить хост
+yc managed-postgresql cluster list-hosts cyberlab-db --format json | jq -r '.[0].name'
+```
+
+**Настройка ВМ:**
+
+```bash
+# 8. Подключиться по SSH
+ssh ubuntu@<PUBLIC_IP>
+
+# 9. Установить Docker
+curl -fsSL https://get.docker.com | bash
+sudo usermod -aG docker $USER
+
+# 10. Клонировать и запустить
+git clone https://github.com/QuadDarv1ne/cyberlab-mtusi.git /opt/cyberlab
+cd /opt/cyberlab
+
+# 11. .env — указать хост из шага 7
+cat > .env << EOF
+DATABASE_URL=postgresql://cyberlab:strong_password@rc1a-xxxxx.mdb.yandexcloud.net:6432/cyberlab?schema=public&ssl=true&sslmode=require
+NODE_ENV=production
+PORT=3000
+EOF
+
+# 12. Установить Node.js и запустить
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash -
+sudo apt-get install -y nodejs
+npm install
+npx prisma generate
+npx prisma db push
+npm run db:seed
 npm run build
 
-# 6. Установить PM2 для управления процессом
+# 13. PM2
 npm install -g pm2
 pm2 start scripts/start-server.js --name cyberlab
 pm2 save
 pm2 startup
 ```
 
-### Настройка Caddy (HTTPS + reverse proxy)
+**HTTPS (Certbot или Caddy):**
 
 ```bash
-# Установить Caddy
-apt-get install -y debian-keyring debian-archive-keyring
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
-apt-get update && apt-get install caddy
+sudo apt-get install -y caddy
 ```
 
-Создайте `/etc/caddy/Caddyfile`:
+Создать `/etc/caddy/Caddyfile`:
 ```
 cyberlab.example.com {
     reverse_proxy localhost:3000
 }
 ```
 
+Если домена нет — Caddy на IP не выдаст сертификат.
+Используйте Yandex Certificate Manager для своего домена.
+
+#### Результат
+
+`https://cyberlab.example.com` — управляемый PostgreSQL, ВМ под полным контролем.
+
+---
+
+## Бэкапы
+
+### Ручные
+
 ```bash
-systemctl enable --now caddy
+# PostgreSQL
+pg_dump "postgresql://user:pass@localhost:5432/cyberlab?schema=public" \
+  --no-owner --no-acl \
+  | gzip > backup_$(date +%Y%m%d_%H%M%S).sql.gz
+
+# Восстановление
+gunzip -c backup_20260527_120000.sql.gz | psql "postgresql://user:pass@localhost:5432/cyberlab?schema=public"
+
+# MongoDB
+mongodump --uri="mongodb://user:pass@localhost:27017/cyberlab" \
+  --gzip --archive=backup_$(date +%Y%m%d_%H%M%S).gz
+
+# Восстановление
+mongorestore --gzip --archive=backup_20260527_120000.gz
+
+# SQLite (просто копировать файл)
+cp db/custom.db backup/backup_$(date +%Y%m%d_%H%M%S).db
 ```
 
-### Подключение пользователей
+### Автоматические (cron)
 
-`https://cyberlab.example.com` — Caddy сам выдаст SSL-сертификат.
+Создать скрипт `/opt/cyberlab/scripts/backup.sh`:
 
----
+```bash
+#!/bin/bash
+BACKUP_DIR="/opt/backups/cyberlab"
+mkdir -p "$BACKUP_DIR"
+DATE=$(date +%Y%m%d_%H%M%S)
 
-## 5. Railway
+cd /opt/cyberlab
 
-Простейший облачный хостинг (до $5 кредита бесплатно).
+# Определить тип БД
+if grep -q "postgresql" .env 2>/dev/null; then
+  pg_dump "$DATABASE_URL" --no-owner --no-acl | gzip > "$BACKUP_DIR/db_$DATE.sql.gz"
+elif grep -q "mongodb" .env 2>/dev/null; then
+  mongodump --uri="$MONGODB_URI" --gzip --archive="$BACKUP_DIR/db_$DATE.gz"
+else
+  cp db/custom.db "$BACKUP_DIR/db_$DATE.db"
+fi
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new)
+# Хранить 30 дней
+find "$BACKUP_DIR" -name "db_*" -mtime +30 -delete
 
-### Шаги
+echo "[$(date)] Backup created: $BACKUP_DIR/db_$DATE" >> "$BACKUP_DIR/backup.log"
+```
 
-1. Создайте аккаунт на [railway.app](https://railway.app)
-2. Нажмите **New Project** → **Deploy from GitHub repo**
-3. Выберите репозиторий `QuadDarv1ne/cyberlab-mtusi`
-4. Railway автоматически определит Next.js проект
+```bash
+chmod +x /opt/cyberlab/scripts/backup.sh
+(crontab -l 2>/dev/null; echo "0 3 * * * /opt/cyberlab/scripts/backup.sh") | crontab -
+```
 
-### Настройка PostgreSQL (рекомендуется)
-
-1. В проекте Railway нажмите **New** → **Database** → **Add PostgreSQL**
-2. Railway автоматически добавит переменную окружения `DATABASE_URL_PUBLIC`
-3. Добавьте в переменные окружения:
-   ```
-   DATABASE_URL = postgresql://...
-   NODE_ENV = production
-   PORT = 3000
-   ```
-
-4. В **Deploy** → **Shell** выполните:
-   ```bash
-   npx prisma generate
-   npx prisma db push
-   npm run db:seed
-   ```
-
-### Настройка MongoDB
-
-1. Нажмите **New** → **Database** → **Add MongoDB**
-2. Скопируйте `MONGODB_URI` из переменных окружения
-3. Добавьте в переменные окружения:
-   ```
-   MONGODB_URI = mongodb://...
-   DB_TYPE = mongodb
-   ```
-
-### Важно
-
-- **Build Command:** `npm run build`
-- **Start Command:** `node scripts/start-server.js`
-- Бесплатный тир спит после 30 минут бездействия
+> Каждый день в 3:00 ночи — автоматический бэкап.
+> Хранятся 30 дней, старые удаляются.
 
 ---
 
-## 6. Render
+## Мониторинг (Prometheus + Grafana)
 
-Облачный хостинг с бесплатным тиром (512 MB RAM, спит после 15 минут).
+### Docker Compose мониторинг
 
-### Шаги
+Добавить в `docker-compose.yml`:
 
-1. Создайте аккаунт на [render.com](https://render.com)
-2. Нажмите **New +** → **Web Service**
-3. Подключите GitHub-репозиторий `QuadDarv1ne/cyberlab-mtusi`
-4. Настройки:
+```yaml
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: cyberlab-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - cyberlab-net
 
-   | Параметр | Значение |
-   |----------|----------|
-   | Name | `cyberlab` |
-   | Runtime | **Node** |
-   | Build Command | `npm install && npx prisma generate && npx prisma db push && npm run db:seed && npm run build` |
-   | Start Command | `node scripts/start-server.js` |
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cyberlab-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - cyberlab-net
 
-5. Добавьте переменные окружения:
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: cyberlab-node-exporter
+    ports:
+      - "9100:9100"
+    networks:
+      - cyberlab-net
+```
 
-   ```
-   NODE_ENV = production
-   ```
+Создать `prometheus.yml`:
 
-6. Создайте базу данных: **New +** → **PostgreSQL**
-7. Скопируйте `DATABASE_URL` из PostgreSQL в переменные окружения Web Service
+```yaml
+global:
+  scrape_interval: 15s
 
-### Подключение пользователей
+scrape_configs:
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
 
-Render выдаст домен вида `https://cyberlab.onrender.com`.
+  - job_name: 'app'
+    metrics_path: '/api/health'
+    static_configs:
+      - targets: ['app:3000']
+```
 
-### Регулярное обновление
+Добавить эндпоинт `/api/health` в `src/app/api/health/route.ts`:
 
-При пуше в GitHub Render автоматически пересоберёт и перезапустит приложение.
-
----
-
-## 7. Vercel + MongoDB Atlas
-
-Vercel — бесплатный хостинг Next.js от Vercel. Ограничение: serverless-функции не поддерживают длительные соединения к SQLite. Необходима внешняя БД.
-
-### Шаги
-
-1. Создайте аккаунт на [vercel.com](https://vercel.com)
-2. Установите Vercel CLI:
-   ```bash
-   npm i -g vercel
-   ```
-
-3. В корне проекта выполните:
-   ```bash
-   vercel login
-   vercel --prod
-   ```
-
-4. Настройте MongoDB Atlas:
-   - Создайте кластер на [mongodb.com/atlas](https://mongodb.com/atlas) (бесплатный M0)
-   - Получите строку подключения: `mongodb+srv://user:pass@cluster.mongodb.net/cyberlab`
-   - Добавьте IP `0.0.0.0/0` в Network Access (для доступа отовсюду)
-
-5. В настройках Vercel проекта добавьте переменные окружения:
-   ```
-   MONGODB_URI = mongodb+srv://...
-   DB_TYPE = mongodb
-   NODE_ENV = production
-   ```
-
-6. Укажите скрипт сборки в `vercel.json` (создать в корне проекта):
-
-```json
-{
-  "buildCommand": "npx prisma generate && next build",
-  "outputDirectory": ".next",
-  "installCommand": "npm install"
+```typescript
+export async function GET() {
+  return Response.json({
+    status: 'healthy',
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    timestamp: new Date().toISOString(),
+  })
 }
 ```
 
-### Важно
+### Метрики для мониторинга
 
-- **Prisma + MongoDB**: укажите в `.env` для сборки `PRISMA_PROVIDER=mongodb`
-- **Serverless-функции** имеют ограничение в 10 секунд на ответ и 50 MB памяти
-- На бесплатном тире Vercel — 100 GB трафика и 6000 минут сборки в месяц
+| Метрика | Описание | Источник |
+|---------|----------|----------|
+| CPU / RAM / Disk | Загрузка сервера | node-exporter |
+| Uptime | Время работы приложения | `/api/health` |
+| DB connection | Статус подключения к БД | `/api/health` |
+| HTTP 5xx | Ошибки сервера | Caddy / Nginx logs |
+| Response time (p50/p95/p99) | Задержка ответов | Caddy logs |
+
+### Grafana Dashboard
+
+1. Открыть `http://<сервер>:3001` (логин: admin / admin)
+2. Добавить Data Source → Prometheus (`http://prometheus:9090`)
+3. Импортировать Dashboard ID `1860` (Node Exporter Full)
+4. Настроить алерты: Telegram / Email
 
 ---
 
-## 8. Российские хостинги
+## CI/CD через GitHub Actions
 
-Для развёртывания в РФ (обходит проблемы с блокировками зарубежных сервисов).
+Создать `.github/workflows/deploy.yml`:
 
-### Timeweb Cloud
+```yaml
+name: Deploy CyberLab
 
-1. Создайте аккаунт на [timeweb.cloud](https://timeweb.cloud)
-2. Создайте **VDS** (Linux Ubuntu 22.04, минимум 1 vCPU / 1 GB RAM)
-3. Подключитесь по SSH и выполните шаги из раздела [4. VPS — ручная установка](#4-vps--ручная-установка)
+on:
+  push:
+    branches: [main]
 
-Преимущества:
-- Тарифы от 200 ₽/мес
-- Встроенный файрвол
-- Бесплатный домен 3-го уровня
-- Поддержка российских карт
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run lint
+      - run: npm run build
 
-### Beget
+  deploy-vps:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
 
-1. Создайте аккаунт на [beget.com](https://beget.com)
-2. Выберите тариф **VPS** (или **Dedicated**)
-3. В панели управления закажите выделение IP-адреса
-4- Установите Node.js через панель управления или SSH
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/cyberlab
+            git pull
+            docker compose build app
+            docker compose up -d
+            docker compose exec app npx prisma db push
 
-Команды после подключения по SSH:
-```bash
-# Установка Node.js
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-apt-get install -y nodejs git
-
-# Далее — шаги из раздела 4
+  deploy-railway:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Railway
+        run: npx railway up --service cyberlab
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 ```
 
-### Reg.ru / 1cloud
+### Настройка Secrets
 
-1. Закажите VPS на [reg.ru](https://reg.ru) или [1cloud.ru](https://1cloud.ru)
-2. Выберите образ с Ubuntu 22.04 или Debian 12
-3. Повторите шаги из раздела [4. VPS — ручная установка](#4-vps--ручная-установка)
+В GitHub → Settings → Secrets and variables → Actions:
 
----
-
-## Советы по безопасности
-
-1. **Всегда меняйте пароли БД** перед продакшеном
-2. **Используйте HTTPS** — Caddy выдаёт SSL бесплатно
-3. **Настройте файрвол** — открывайте только порты 80, 443 (и 22 для SSH)
-4. **Регулярно делайте бэкапы** БД:
-   ```bash
-   # PostgreSQL
-   pg_dump cyberlab > backup-$(date +%Y%m%d).sql
-
-   # MongoDB
-   mongodump --uri="$MONGODB_URI"
-   ```
-5. **Мониторинг** через PM2:
-   ```bash
-   pm2 monit
-   pm2 logs cyberlab
-   ```
+| Secret | Описание |
+|--------|----------|
+| `VPS_HOST` | IP-адрес VPS |
+| `VPS_USER` | Пользователь SSH (обычно `root` или `ubuntu`) |
+| `VPS_SSH_KEY` | Приватный SSH-ключ |
+| `RAILWAY_TOKEN` | Railway API токен (настройки → Tokens) |
 
 ---
 
-## Сравнение платформ
+## Чеклист деплоя
 
-| Характеристика | LAN | Docker | VPS | Railway | Render | Vercel |
-|----------------|-----|--------|-----|---------|--------|--------|
-| Бесплатно | + | - | - | ± | ± | ± |
-| HTTPS | - | + | + | + | + | + |
-| Свой домен | - | + | + | + | + | + |
-| SQLite | + | + | + | - | - | - |
-| PostgreSQL | - | + | + | + | + | - |
-| MongoDB | - | + | + | + | - | + |
-| Простота | ★★★★★ | ★★★ | ★★ | ★★★★ | ★★★★ | ★★★★ |
-| Контроль | ★★★ | ★★★★ | ★★★★★ | ★★ | ★★ | ★★ |
+### Перед деплоем
+
+- [ ] Создан `.env` с правильными переменными
+- [ ] `DATABASE_URL` указывает на существующую БД
+- [ ] Пароли БД изменены (не default)
+- [ ] `prisma generate` выполнен без ошибок
+- [ ] `prisma db push` применил схему
+- [ ] `npm run db:seed` заполнил данные
+- [ ] `npm run lint` — 0 errors
+- [ ] `npx tsc --noEmit` — 0 errors
+- [ ] `npm run build` — compiled successfully
+- [ ] Приложение открывается на `http://localhost:3000`
+- [ ] API-роуты отвечают (`/api/labs`, `/api/students`, etc.)
+- [ ] Отправка флага работает (POST `/api/flags`)
+- [ ] Дашборд показывает данные (GET `/api/dashboard`)
+
+### После деплоя
+
+- [ ] HTTPS работает (Caddy / Certbot)
+- [ ] Домен привязан (DNS A-запись на IP сервера)
+- [ ] Порты 80/443 открыты в файрволе
+- [ ] Порт 22 (SSH) доступен только по ключу
+- [ ] Настроены автоматические бэкапы (cron)
+- [ ] Настроен мониторинг (PM2 / Grafana)
+- [ ] CI/CD пайплайн проходит
+- [ ] Студенты могут подключиться и отправлять флаги
+
+---
+
+## Troubleshooting и rollback
+
+### Приложение не запускается
+
+```
+Error: Cannot find module 'prisma/client'
+```
+
+```bash
+npm install
+npx prisma generate
+```
+
+```
+Error: Can't reach database server
+```
+
+Проверьте:
+- `DATABASE_URL` в `.env` (синтаксис, хост, порт)
+- БД запущена: `docker ps` / `systemctl status postgresql`
+- Файрвол: `sudo ufw status`
+
+```
+Error: Port 3000 is already in use
+```
+
+```bash
+# Найти процесс
+lsof -i :3000
+# или Windows
+netstat -ano | findstr :3000
+
+# Убить
+kill -9 <PID>
+# или Windows
+taskkill /PID <PID> /F
+```
+
+### База данных
+
+```
+PrismaClientInitializationError: Invalid `prisma.lab.findMany()`
+```
+
+Причина: схема Prisma не применена к БД.
+Решение:
+```bash
+npx prisma db push
+```
+
+```
+Error: relation "Lab" does not exist
+```
+
+Причина: PostgreSQL, миграция не выполнена.
+Решение:
+```bash
+npx prisma db push
+```
+
+### Docker / Docker Swarm
+
+```
+docker: 'compose' is not a docker command.
+```
+
+```bash
+sudo apt-get install docker-compose-plugin
+# или используйте docker-compose (с дефисом)
+```
+
+```
+Service replicas are failing to start
+```
+
+```bash
+docker service logs cyberlab_app
+docker service ps cyberlab_app --no-trunc
+```
+
+### Откат (rollback)
+
+**Docker Compose:**
+```bash
+# Откатить до предыдущего коммита
+cd /opt/cyberlab
+git revert HEAD
+# или
+git reset --hard HEAD~1
+# Пересобрать
+docker compose build app
+docker compose up -d
+```
+
+**Docker Swarm:**
+```bash
+# Откатить последнее обновление сервиса
+docker service update --rollback cyberlab_app
+```
+
+**VPS (без Docker):**
+```bash
+# Переключиться на предыдущую сборку
+cd /opt/cyberlab
+git stash
+git checkout <предыдущий-коммит>
+npm ci
+npm run build
+pm2 restart cyberlab
+```
+
+**Vercel:**
+```bash
+# В дашборде Vercel → Deployments → три точки → Promote to Production
+# Или CLI:
+vercel rollback
+```
+
+**Railway:**
+```bash
+# Railway → Deployments → выбрать предыдущий → "Deploy"
+# Или CLI:
+railway rollback
+```
 
 ---
 
