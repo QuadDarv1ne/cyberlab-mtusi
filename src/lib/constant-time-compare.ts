@@ -1,13 +1,13 @@
-import { timingSafeEqual } from 'crypto'
+import { createHash, timingSafeEqual } from 'crypto'
 
 /**
  * Timing-safe string comparison to prevent timing oracle attacks.
- * Uses Node.js crypto.timingSafeEqual which compares bytes in constant time
- * regardless of where strings differ, preventing length-based timing leaks.
+ * Hashes both inputs with SHA-256 before comparison, ensuring the
+ * comparison always runs on fixed-length (32-byte) digests. This
+ * prevents attackers from inferring correct flag length via timing.
  */
 export function constantTimeCompare(a: string, b: string): boolean {
-  const aBuf = Buffer.from(a, 'utf8')
-  const bBuf = Buffer.from(b, 'utf8')
-  if (aBuf.length !== bBuf.length) return false
-  return timingSafeEqual(aBuf, bBuf)
+  const aHash = createHash('sha256').update(a, 'utf8').digest()
+  const bHash = createHash('sha256').update(b, 'utf8').digest()
+  return timingSafeEqual(aHash, bHash)
 }
