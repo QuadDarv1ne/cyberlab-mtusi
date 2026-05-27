@@ -1,7 +1,7 @@
-import React from 'react'
+import type { ReactNode } from 'react'
 import { Search, Zap, Bug, Network, Shield, BookOpen, BarChart3, Terminal, FileText, Info } from 'lucide-react'
 
-export const CATEGORY_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
+export const CATEGORY_META: Record<string, { label: string; icon: ReactNode; color: string }> = {
   reconnaissance: { label: 'Разведка', icon: <Search className="w-4 h-4" />, color: 'bg-cyan-500/10 text-cyan-600 border-cyan-500/20' },
   exploitation: { label: 'Эксплуатация', icon: <Zap className="w-4 h-4" />, color: 'bg-red-500/10 text-red-600 border-red-500/20' },
   web_security: { label: 'Веб-безопасность', icon: <Bug className="w-4 h-4" />, color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },

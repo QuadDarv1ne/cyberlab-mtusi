@@ -80,18 +80,6 @@ export default function CyberLab() {
 
   const selectedStudent = students[selectedStudentIdx] || null
 
-  useEffect(() => {
-    const el = statsRef.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) observer.disconnect() },
-      { threshold: 0.2 }
-    )
-    observer.observe(el)
-    // eslint-disable-next-line consistent-return
-    return () => { observer.disconnect() }
-  }, [])
-
   const fetchLabs = useCallback(async () => {
     try {
       const res = await fetch('/api/labs')
