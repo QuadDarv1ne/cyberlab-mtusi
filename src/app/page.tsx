@@ -159,9 +159,9 @@ export default function CyberLab() {
       const res = await fetch(`/api/articles?${params}`)
       if (!res.ok) throw new Error(`Failed to fetch articles: ${res.status}`)
       const data = await res.json()
-      setArticles(data.articles)
-      setBlogPage(data.page)
-      setBlogTotalPages(data.totalPages)
+      setArticles(data.articles ?? [])
+      setBlogPage(data.page ?? 1)
+      setBlogTotalPages(data.totalPages ?? 1)
     } catch (error) {
       logger.error('Failed to fetch articles:', error)
       toast({ title: 'Ошибка загрузки', description: 'Не удалось загрузить статьи.', variant: 'destructive' })
@@ -179,15 +179,11 @@ export default function CyberLab() {
     init()
   }, [fetchLabs, fetchDashboard, fetchStudents])
 
-  const handleBlogFetch = useCallback(async (page: number, search: string, category: string) => {
-    await fetchArticles(page, search, category)
-  }, [fetchArticles])
-
   useEffect(() => {
     if (activeTab === 'blog') {
-      handleBlogFetch(blogPage, debouncedBlogSearch, blogCategory)
+      fetchArticles(blogPage, debouncedBlogSearch, blogCategory)
     }
-  }, [activeTab, blogPage, debouncedBlogSearch, blogCategory, handleBlogFetch])
+  }, [activeTab, blogPage, debouncedBlogSearch, blogCategory, fetchArticles])
 
   const submitFlag = useCallback(async (labId: string, flagKey: string) => {
     const resultKey = `${labId}-${flagKey}`
@@ -234,11 +230,13 @@ export default function CyberLab() {
     }
   }, [flagInputs, students, selectedStudentIdx, toast, fetchProgress, fetchDashboard])
 
-  const isFlagFound = (labId: string, flagKey: string) =>
+  const isFlagFound = useCallback((labId: string, flagKey: string) =>
     foundFlags.some(f => f.labId === labId && f.flagKey === flagKey)
+  , [foundFlags])
 
-  const getLabProgress = (labId: string) =>
+  const getLabProgress = useCallback((labId: string) =>
     progressRecords.find(p => p.labId === labId)
+  , [progressRecords])
 
   const filteredLabs = useMemo(() => labs.filter(lab => {
     const matchesSearch = catalogSearch.trim() === '' ||

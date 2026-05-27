@@ -13,7 +13,7 @@ const rateLimitMap = new Map<string, RateLimitEntry>()
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000 // 5 minutes
 
 // Cleanup expired entries periodically
-setInterval(() => {
+const cleanupTimer = setInterval(() => {
   const now = Date.now()
   for (const [key, entry] of rateLimitMap) {
     if (now > entry.resetAt) {
@@ -21,6 +21,7 @@ setInterval(() => {
     }
   }
 }, CLEANUP_INTERVAL_MS)
+cleanupTimer.unref()
 
 export interface RateLimitOptions {
   /** Maximum number of requests allowed in the window */

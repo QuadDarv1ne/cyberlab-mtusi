@@ -76,19 +76,17 @@ export async function GET(req: Request) {
   }, 'GET /api/articles')
 }
 
-// Comprehensive HTML sanitization - strips all tags and dangerous patterns
+// HTML sanitization - strips tags and dangerous protocols, preserves legitimate text content
 function sanitizeHtml(input: string): string {
   return input
-    // Remove all HTML tags (complete strip, no allowed tags)
+    // Remove all HTML tags
     .replace(/<[^>]*>/g, '')
     // Remove javascript: protocol
     .replace(/javascript\s*:/gi, '')
-    // Remove data: protocol (could contain scripts)
+    // Remove data: protocol
     .replace(/data\s*:/gi, '')
     // Remove vbscript: protocol
     .replace(/vbscript\s*:/gi, '')
-    // Normalize HTML entities that could be used for bypass
-    .replace(/&[#]?[a-zA-Z0-9]+;/g, '')
     .trim()
 }
 
