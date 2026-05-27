@@ -44,11 +44,6 @@ export class ErrorBoundary extends Component<Props, State> {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {this.state.error && (
-                <pre className="text-xs bg-muted p-3 rounded-md overflow-auto max-h-32">
-                  {this.state.error.message}
-                </pre>
-              )}
               <Button
                 className="w-full gap-2"
                 onClick={() => this.setState({ hasError: false, error: null })}
