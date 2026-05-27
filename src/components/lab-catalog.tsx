@@ -1,6 +1,6 @@
 'use client'
 
-import { Search, X, FileSearch, ChevronRight, Flag, Trophy, CheckCircle2, Clock } from 'lucide-react'
+import { Search, X, FileSearch, ChevronRight, Flag, Trophy, CheckCircle2, Clock, Star } from 'lucide-react'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -80,7 +80,7 @@ export function LabCatalog({
           </Button>
           {Object.entries(DIFFICULTY_META).map(([key, meta]) => (
             <Button key={key} variant={catalogDifficultyFilter === key ? 'default' : 'outline'} size="sm" className="gap-1" onClick={() => setCatalogDifficultyFilter(key)}>
-              {Array.from({ length: meta.stars }).map((_, i) => <Search key={i} className="w-3 h-3 fill-current" />)}
+              {Array.from({ length: meta.stars }).map((_, i) => <Star key={i} className="w-3 h-3 fill-current" />)}
               {meta.label}
             </Button>
           ))}

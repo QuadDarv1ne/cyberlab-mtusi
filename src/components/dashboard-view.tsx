@@ -41,6 +41,10 @@ export function DashboardView({
     }
   }), [labs, progressRecords])
 
+  const sortedStudentStats = useMemo(() =>
+    [...dashboard.studentStats].sort((a, b) => b.totalScore - a.totalScore)
+  , [dashboard.studentStats])
+
   const pieChartData = useMemo(() => {
     const completedCount = progressRecords.filter(p => p.status === 'completed').length
     const inProgressCount = progressRecords.filter(p => p.status === 'in_progress').length
@@ -272,8 +276,7 @@ export function DashboardView({
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {useMemo(() =>
-              [...dashboard.studentStats].sort((a, b) => b.totalScore - a.totalScore).map((s, idx) => (
+            {sortedStudentStats.map((s, idx) => (
               <div key={s.id} className={`flex items-center gap-4 p-3 rounded-lg transition-colors ${s.id === selectedStudent?.id ? 'bg-cyan-500/10 border border-cyan-500/20' : 'bg-muted/50'}`}>
                 <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
                   idx === 0 ? 'bg-amber-500 text-white' : idx === 1 ? 'bg-slate-400 text-white' : idx === 2 ? 'bg-orange-400 text-white' : 'bg-muted text-muted-foreground'
@@ -289,8 +292,7 @@ export function DashboardView({
                   <div className="text-xs text-muted-foreground">{s.completedLabs}/{s.totalLabs} работ</div>
                 </div>
               </div>
-            ))
-            , [dashboard.studentStats, selectedStudent?.id])}
+            ))}
           </div>
         </CardContent>
       </Card>

@@ -27,7 +27,6 @@
     "docker:reset": "docker-compose down -v"
   },
   "dependencies": {
-    "2": "^3.0.0",
     "@prisma/client": "^6.11.1",
     "@radix-ui/react-progress": "^1.1.7",
     "@radix-ui/react-separator": "^1.1.7",

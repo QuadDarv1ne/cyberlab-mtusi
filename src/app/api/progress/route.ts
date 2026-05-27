@@ -12,8 +12,8 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'studentId is required' }, { status: 400 })
     }
 
-    // Strict validation: studentId should be a valid cuid format
-    if (studentId.length > 100 || !/^[a-zA-Z0-9]+$/.test(studentId)) {
+    // Relaxed validation: allow alphanumeric, hyphens, underscores (e.g. seed-student-1)
+    if (studentId.length > 100 || !/^[a-zA-Z0-9_-]+$/.test(studentId)) {
       return NextResponse.json({ error: 'Invalid studentId format' }, { status: 400 })
     }
 
