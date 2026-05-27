@@ -3,6 +3,7 @@ import { cachedJson, withErrorHandling } from '@/lib/api-helpers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
+import sanitize from 'sanitize-html'
 
 const articleSchema = z.object({
   slug: z.string().min(1).regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
@@ -76,18 +77,14 @@ export async function GET(req: Request) {
   }, 'GET /api/articles')
 }
 
-// HTML sanitization - strips tags and dangerous protocols, preserves legitimate text content
+// XSS protection using sanitize-html library
 function sanitizeHtml(input: string): string {
-  return input
-    // Remove all HTML tags
-    .replace(/<[^>]*>/g, '')
-    // Remove javascript: protocol
-    .replace(/javascript\s*:/gi, '')
-    // Remove data: protocol
-    .replace(/data\s*:/gi, '')
-    // Remove vbscript: protocol
-    .replace(/vbscript\s*:/gi, '')
-    .trim()
+  return sanitize(input, {
+    allowedTags: [],
+    allowedAttributes: {},
+    disallowedTagsMode: 'discard',
+    enforceHtmlBoundary: true,
+  })
 }
 
 export async function POST(req: Request) {
