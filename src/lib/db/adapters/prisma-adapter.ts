@@ -23,6 +23,27 @@ export class PrismaAdapter extends DatabaseAdapter {
     await this.client.$disconnect()
   }
 
+  // User operations
+  async userFindUnique(args: { where: { id: string } | { email: string }; include?: Record<string, unknown> }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return this.client.user.findUnique(args as any)
+  }
+
+  async userCreate(args: { data: Record<string, unknown> }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return this.client.user.create(args as any)
+  }
+
+  async userUpdate(args: { where: { id: string }; data: Record<string, unknown> }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return this.client.user.update(args as any)
+  }
+
+  async userFindMany(args: { where?: Record<string, unknown>; select?: Record<string, unknown> }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return this.client.user.findMany(args as any)
+  }
+
   // Student operations
   async studentFindMany(args: { select?: Record<string, unknown>; orderBy?: Record<string, unknown>; include?: Record<string, unknown> }) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

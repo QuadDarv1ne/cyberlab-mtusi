@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import { useSession, signOut } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import {
-  Shield, FileText, Menu, X, Moon, Sun, GraduationCap
+  Shield, FileText, Menu, X, Moon, Sun, GraduationCap, LogOut, User
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -21,13 +23,14 @@ import { ToolsReference } from '@/components/tools-reference'
 import { AboutPage } from '@/components/about-page'
 
 export default function CyberLab() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const { toast } = useToast()
   const [labs, setLabs] = useState<Lab[]>([])
   const [dashboard, setDashboard] = useState<DashboardData | null>(null)
   const [students, setStudents] = useState<StudentDb[]>([])
   const [activeTab, setActiveTab] = useState('home')
   const [selectedLab, setSelectedLab] = useState<Lab | null>(null)
-  const [selectedStudentIdx, setSelectedStudentIdx] = useState(0)
   const [flagInputs, setFlagInputs] = useState<Record<string, string>>({})
   const flagInputsRef = useRef(flagInputs)
   useEffect(() => {
@@ -40,6 +43,13 @@ export default function CyberLab() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [darkMode, setDarkMode] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
+
+  // Authenticated user's linked student
+  const authStudent = useMemo(() => {
+    if (!session?.user?.studentId) return null
+    return students.find(s => s.id === session.user.studentId) || null
+  }, [session, students])
 
   useEffect(() => {
     try {
@@ -82,7 +92,7 @@ export default function CyberLab() {
     }
   }, [blogSearch])
 
-  const selectedStudent = students[selectedStudentIdx] || null
+  const selectedStudent = authStudent
 
   const fetchLabs = useCallback(async () => {
     try {
@@ -164,6 +174,11 @@ export default function CyberLab() {
   }, [toast])
 
   useEffect(() => {
+    if (status === 'loading') return
+    if (status === 'unauthenticated') {
+      router.push('/login')
+      return
+    }
     const init = async () => {
       const results = await Promise.allSettled([
         fetchStudents(),
@@ -183,7 +198,7 @@ export default function CyberLab() {
       setLoading(false)
     }
     init()
-  }, [fetchLabs, fetchDashboard, fetchStudents, toast])
+  }, [fetchLabs, fetchDashboard, fetchStudents, toast, status, router])
 
   useEffect(() => {
     if (activeTab === 'blog') {
@@ -198,9 +213,9 @@ export default function CyberLab() {
       toast({ title: 'Ошибка', description: 'Введите значение флага', variant: 'destructive' })
       return
     }
-    const currentStudent = students[selectedStudentIdx]
+    const currentStudent = authStudent
     if (!currentStudent) {
-      toast({ title: 'Ошибка', description: 'Выберите студента', variant: 'destructive' })
+      toast({ title: 'Ошибка', description: 'Войдите в систему', variant: 'destructive' })
       return
     }
 
@@ -234,7 +249,7 @@ export default function CyberLab() {
     } finally {
       setSubmitting(prev => ({ ...prev, [resultKey]: false }))
     }
-  }, [students, selectedStudentIdx, toast, fetchProgress, fetchDashboard])
+  }, [authStudent, toast, fetchProgress, fetchDashboard])
 
   const isFlagFound = useCallback((labId: string, flagKey: string) =>
     foundFlags.some(f => f.labId === labId && f.flagKey === flagKey)
@@ -295,11 +310,38 @@ export default function CyberLab() {
               <Button variant="ghost" size="icon" onClick={() => setDarkMode(prev => !prev)} aria-label={darkMode ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'}>
                 {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </Button>
-              {selectedStudent && (
-                <Badge variant="outline" className="hidden sm:flex gap-1" aria-label={`Активный студент: ${selectedStudent.name}`}>
-                  <GraduationCap className="w-3 h-3" aria-hidden="true" />
-                  {selectedStudent.name}
-                </Badge>
+              {session?.user && (
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="hidden sm:flex gap-2"
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                  >
+                    <User className="w-4 h-4" />
+                    {session.user.name}
+                  </Button>
+                  {showUserMenu && (
+                    <div className="absolute right-0 top-full mt-1 w-48 rounded-md border bg-popover p-1 shadow-lg z-50">
+                      <div className="px-3 py-2 text-sm border-b">
+                        <p className="font-medium">{session.user.name}</p>
+                        <p className="text-muted-foreground text-xs">{session.user.email}</p>
+                        {session.user.studentId && authStudent && (
+                          <p className="text-muted-foreground text-xs mt-1">Группа: {authStudent.group}</p>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start gap-2 text-red-500"
+                        onClick={() => signOut({ callbackUrl: '/login' })}
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Выйти
+                      </Button>
+                    </div>
+                  )}
+                </div>
               )}
               <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label={mobileMenuOpen ? 'Закрыть меню' : 'Открыть меню'} aria-expanded={mobileMenuOpen}>
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -315,16 +357,21 @@ export default function CyberLab() {
                 </Button>
               ))}
               <Separator className="my-2" />
-              <div className="px-4">
-                <span className="text-sm text-muted-foreground">Студент:</span>
-                <div className="flex gap-2 mt-2">
-                  {students.map((s, idx) => (
-                    <Button key={s.id} variant={selectedStudentIdx === idx ? 'default' : 'outline'} size="sm" onClick={() => { setSelectedStudentIdx(idx); setMobileMenuOpen(false) }}>
-                      {s.name.split(' ')[0]}
-                    </Button>
-                  ))}
+              {session?.user && (
+                <div className="px-4 py-2">
+                  <span className="text-sm text-muted-foreground">Вы вошли как:</span>
+                  <p className="text-sm font-medium">{session.user.name}</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 p-0 h-auto mt-1"
+                    onClick={() => signOut({ callbackUrl: '/login' })}
+                  >
+                    <LogOut className="w-3 h-3 mr-1" />
+                    Выйти
+                  </Button>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>
@@ -414,9 +461,7 @@ export default function CyberLab() {
             <DashboardView
               dashboard={dashboard}
               selectedStudent={selectedStudent}
-              selectedStudentIdx={selectedStudentIdx}
               students={students}
-              setSelectedStudentIdx={setSelectedStudentIdx}
               labs={labs}
               progressRecords={progressRecords}
             />

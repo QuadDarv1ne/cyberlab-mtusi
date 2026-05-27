@@ -3,6 +3,18 @@
  * Used by all adapters (Prisma for SQLite/PostgreSQL, native MongoDB).
  */
 
+export interface User {
+  id: string
+  name: string
+  email: string
+  passwordHash: string
+  role: 'STUDENT' | 'ADMIN'
+  studentId: string | null
+  emailVerified: Date | null
+  createdAt: Date
+  updatedAt: Date
+}
+
 export interface Student {
   id: string
   name: string

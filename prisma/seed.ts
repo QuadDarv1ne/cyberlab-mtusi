@@ -1,20 +1,60 @@
 import { db } from '@/lib/db'
 import type { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 async function seed() {
   // Use raw Prisma client for seed operations (upsert, nested creates, etc.)
   const prisma = db.rawClient as PrismaClient
 
-  // Create students (idempotent)
+  // Create passwords
+  const studentPassword = await bcrypt.hash('Student2024!', 12)
+  const adminPassword = await bcrypt.hash('Admin2024!', 12)
+
+  // Create admin user
+  await prisma.user.upsert({
+    where: { email: 'admin@mtusi.local' },
+    update: {},
+    create: {
+      name: 'Administrator',
+      email: 'admin@mtusi.local',
+      passwordHash: adminPassword,
+      role: 'ADMIN',
+    },
+  })
+
+  // Create students with linked users (idempotent)
   const student1 = await prisma.student.upsert({
     where: { id: 'seed-student-1' },
     update: {},
     create: { id: 'seed-student-1', name: 'Дуплей Максим Игоревич', group: 'УБВТ-24-04' },
   })
+  await prisma.user.upsert({
+    where: { email: 'dupley.maksim@mtusi.local' },
+    update: {},
+    create: {
+      name: student1.name,
+      email: 'dupley.maksim@mtusi.local',
+      passwordHash: studentPassword,
+      role: 'STUDENT',
+      studentId: student1.id,
+    },
+  })
+
   const student2 = await prisma.student.upsert({
     where: { id: 'seed-student-2' },
     update: {},
     create: { id: 'seed-student-2', name: 'Думилин Вадим Владиславович', group: 'УБВТ-24-04' },
+  })
+  await prisma.user.upsert({
+    where: { email: 'dumilin.vadim@mtusi.local' },
+    update: {},
+    create: {
+      name: student2.name,
+      email: 'dumilin.vadim@mtusi.local',
+      passwordHash: studentPassword,
+      role: 'STUDENT',
+      studentId: student2.id,
+    },
   })
 
   // Create labs (idempotent)

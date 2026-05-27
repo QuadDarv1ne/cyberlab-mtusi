@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { SessionProvider } from "@/components/session-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -54,7 +55,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
         <ErrorBoundary>
-          {children}
+          <SessionProvider>
+            {children}
+          </SessionProvider>
         </ErrorBoundary>
         <Script
           id="json-ld"

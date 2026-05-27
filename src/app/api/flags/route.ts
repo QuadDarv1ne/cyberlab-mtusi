@@ -6,7 +6,6 @@ import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 import { constantTimeCompare } from '@/lib/constant-time-compare'
 
 const flagSubmissionSchema = z.object({
-  studentId: z.string().min(1, 'studentId is required'),
   labId: z.string().min(1, 'labId is required'),
   flagKey: z.string().min(1, 'flagKey is required'),
   flagValue: z.string().min(1, 'flagValue is required').max(200, 'Flag value too long'),
@@ -14,6 +13,13 @@ const flagSubmissionSchema = z.object({
 
 export async function POST(req: Request) {
   return withErrorHandling(async () => {
+    // Auth: read user from middleware headers
+    const userId = req.headers.get('x-user-id')
+    const studentId = req.headers.get('x-user-student-id')
+    if (!userId || !studentId) {
+      return NextResponse.json({ error: 'Требуется авторизация' }, { status: 401 })
+    }
+
     let body
     try {
       body = await req.json()
@@ -26,7 +32,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid request' }, { status: 400 })
     }
 
-    const { studentId, labId, flagKey, flagValue } = parsed.data
+    const { labId, flagKey, flagValue } = parsed.data
 
     // Dual rate limiting: per IP (brute force) and per student+lab (fair use)
     const clientIp = getClientIp(req)

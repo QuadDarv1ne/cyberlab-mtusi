@@ -1,5 +1,5 @@
 import type {
-  Student, Lab, LabFlag, LabProgress, FlagSubmission, Article,
+  Student, Lab, LabFlag, LabProgress, FlagSubmission, Article, User,
   DashboardData, TransactionContext
 } from '../types'
 
@@ -19,6 +19,23 @@ export abstract class DatabaseAdapter {
   get rawClient(): unknown {
     throw new Error('rawClient is not supported for this database type')
   }
+
+  // User operations
+  abstract userFindUnique(args: {
+    where: { id: string } | { email: string }
+    include?: Record<string, unknown>
+  }): Promise<User | null>
+  abstract userCreate(args: {
+    data: Record<string, unknown>
+  }): Promise<User>
+  abstract userUpdate(args: {
+    where: { id: string }
+    data: Record<string, unknown>
+  }): Promise<User>
+  abstract userFindMany(args: {
+    where?: Record<string, unknown>
+    select?: Record<string, unknown>
+  }): Promise<User[]>
 
   // Student operations
   abstract studentFindMany(args: {

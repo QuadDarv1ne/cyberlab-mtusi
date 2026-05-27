@@ -16,17 +16,13 @@ import type { DashboardData, Lab, StudentDb, ProgressRecord } from '@/types'
 export function DashboardView({
   dashboard,
   selectedStudent,
-  selectedStudentIdx,
   students,
-  setSelectedStudentIdx,
   labs,
   progressRecords,
 }: {
   dashboard: DashboardData
   selectedStudent: StudentDb | null
-  selectedStudentIdx: number
   students: StudentDb[]
-  setSelectedStudentIdx: (idx: number) => void
   labs: Lab[]
   progressRecords: ProgressRecord[]
 }) {
@@ -58,22 +54,15 @@ export function DashboardView({
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Панель управления</h2>
-
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-4 flex-wrap">
-            <span className="text-sm font-medium text-muted-foreground">Активный студент:</span>
-            {students.map((s, idx) => (
-              <Button key={s.id} variant={selectedStudentIdx === idx ? 'default' : 'outline'} size="sm" onClick={() => setSelectedStudentIdx(idx)} className="gap-2">
-                <GraduationCap className="w-4 h-4" />
-                {s.name}
-                <Badge variant="secondary" className="ml-1">{s.group}</Badge>
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center gap-2">
+        <h2 className="text-2xl font-bold">Панель управления</h2>
+        {selectedStudent && (
+          <Badge variant="outline" className="ml-auto">
+            <GraduationCap className="w-3 h-3 mr-1" />
+            {selectedStudent.name}
+          </Badge>
+        )}
+      </div>
 
       {currentStat && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

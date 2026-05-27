@@ -6,8 +6,27 @@ generator client {
 // Supported: sqlite (default), postgresql
 // MongoDB uses native driver, not Prisma
 datasource db {
-  provider = env("PRISMA_PROVIDER")
+  provider = "sqlite"
   url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  passwordHash  String
+  role          Role      @default(STUDENT)
+  studentId     String?   @unique
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  student       Student?  @relation(fields: [studentId], references: [id], onDelete: SetNull)
 }
 
 model Student {
@@ -17,6 +36,7 @@ model Student {
   createdAt      DateTime @default(now())
   progress       LabProgress[]
   flagSubmissions FlagSubmission[]
+  user           User?
 }
 
 model Lab {

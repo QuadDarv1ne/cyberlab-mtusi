@@ -89,6 +89,13 @@ function sanitizeHtml(input: string): string {
 
 export async function POST(req: Request) {
   return withErrorHandling(async () => {
+    // Auth: require admin role
+    const userRole = req.headers.get('x-user-role')
+    const userId = req.headers.get('x-user-id')
+    if (!userId || userRole !== 'ADMIN') {
+      return NextResponse.json({ error: 'Недостаточно прав' }, { status: 403 })
+    }
+
     // Rate limit: 5 article creations per minute per IP
     const clientIp = getClientIp(req)
     const rate = checkRateLimit(`articles-post:${clientIp}`, { maxRequests: 5 })

@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { auth } from '@/auth'
 
-export function middleware(request: NextRequest) {
+const protectedApiRoutes = ['/api/flags', '/api/articles']
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
   // Set a persistent client ID cookie + header if missing (required for anonymous rate limiting)
   const cookieHeader = request.headers.get('cookie') ?? ''
   let clientId: string | null = null
@@ -15,6 +20,27 @@ export function middleware(request: NextRequest) {
   // Forward client ID via request header so API handlers can use it immediately
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-client-id', clientId)
+
+  // Auth check for protected API routes
+  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth')) {
+    const isProtected = protectedApiRoutes.some(
+      route => pathname === route || pathname.startsWith(route + '/')
+    )
+    if (isProtected && request.method === 'POST') {
+      const session = await auth()
+      if (!session?.user) {
+        return NextResponse.json(
+          { error: 'Требуется авторизация' },
+          { status: 401 }
+        )
+      }
+      // Forward user info via headers for API handlers
+      requestHeaders.set('x-user-id', session.user.id)
+      requestHeaders.set('x-user-role', String(session.user.role))
+      requestHeaders.set('x-user-student-id', session.user.studentId ?? '')
+    }
+  }
+
   const response = NextResponse.next({
     request: { headers: requestHeaders },
   })
@@ -32,18 +58,15 @@ export function middleware(request: NextRequest) {
   // Security headers
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('X-Frame-Options', 'DENY')
-  response.headers.set('X-XSS-Protection', '0') // Modern browsers use CSP instead
+  response.headers.set('X-XSS-Protection', '0')
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
 
-  // Content Security Policy - 'strict-dynamic' enables hash/nonce-based verification while
-  // 'unsafe-inline' provides fallback for Next.js Hydration (required by the framework)
   response.headers.set(
     'Content-Security-Policy',
     "default-src 'self'; script-src 'self' 'unsafe-inline' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
   )
 
-  // HSTS (only in production, over HTTPS)
   if (process.env.NODE_ENV === 'production') {
     response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
   }
@@ -53,12 +76,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/auth).*)',
   ],
 }
