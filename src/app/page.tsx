@@ -29,6 +29,10 @@ export default function CyberLab() {
   const [selectedLab, setSelectedLab] = useState<Lab | null>(null)
   const [selectedStudentIdx, setSelectedStudentIdx] = useState(0)
   const [flagInputs, setFlagInputs] = useState<Record<string, string>>({})
+  const flagInputsRef = useRef(flagInputs)
+  useEffect(() => {
+    flagInputsRef.current = flagInputs
+  }, [flagInputs])
   const [flagResults, setFlagResults] = useState<Record<string, { correct: boolean; message: string; alreadyFound?: boolean }>>({})
   const [revealedHints, setRevealedHints] = useState<Record<string, boolean>>({})
   const [foundFlags, setFoundFlags] = useState<FoundFlag[]>([])
@@ -119,7 +123,7 @@ export default function CyberLab() {
   const fetchProgress = useCallback(async () => {
     if (!selectedStudent) return
     try {
-      const res = await fetch(`/api/progress?studentId=${selectedStudent.id}`)
+      const res = await fetch(`/api/progress?studentId=${encodeURIComponent(selectedStudent.id)}`)
       if (!res.ok) throw new Error(`Failed to fetch progress: ${res.status}`)
       const data = await res.json()
       setFoundFlags(data.found || [])
@@ -189,7 +193,7 @@ export default function CyberLab() {
 
   const submitFlag = useCallback(async (labId: string, flagKey: string) => {
     const resultKey = `${labId}-${flagKey}`
-    const flagValue = flagInputs[resultKey]
+    const flagValue = flagInputsRef.current[resultKey]
     if (!flagValue?.trim()) {
       toast({ title: 'Ошибка', description: 'Введите значение флага', variant: 'destructive' })
       return
@@ -230,7 +234,7 @@ export default function CyberLab() {
     } finally {
       setSubmitting(prev => ({ ...prev, [resultKey]: false }))
     }
-  }, [flagInputs, students, selectedStudentIdx, toast, fetchProgress, fetchDashboard])
+  }, [students, selectedStudentIdx, toast, fetchProgress, fetchDashboard])
 
   const isFlagFound = useCallback((labId: string, flagKey: string) =>
     foundFlags.some(f => f.labId === labId && f.flagKey === flagKey)
@@ -510,7 +514,9 @@ export default function CyberLab() {
                   role="dialog"
                   aria-modal="true"
                   aria-labelledby="article-dialog-title"
+                  aria-describedby="article-dialog-desc"
                   onClick={() => setSelectedArticle(null)}
+                  onKeyDown={(e) => { if (e.key === 'Escape') { setSelectedArticle(null) } }}
                 >
                   <div className="max-w-3xl w-full my-8 rounded-lg border bg-card" onClick={(e) => e.stopPropagation()}>
                     <div className="p-6">
@@ -523,7 +529,7 @@ export default function CyberLab() {
                         </Button>
                       </div>
                       <h2 id="article-dialog-title" className="text-2xl font-bold mt-3">{selectedArticle.title}</h2>
-                      <p className="text-sm text-muted-foreground mt-1">{selectedArticle.author} • {new Date(selectedArticle.publishedAt).toLocaleDateString('ru-RU')}</p>
+                      <p id="article-dialog-desc" className="text-sm text-muted-foreground mt-1">{selectedArticle.author} • {new Date(selectedArticle.publishedAt).toLocaleDateString('ru-RU')}</p>
                       <div className="mt-4 space-y-3">
                         {selectedArticle.content.split('\n').map((paragraph, i) =>
                           paragraph.trim() ? <p key={`${selectedArticle.id}-p-${i}`} className="text-sm leading-relaxed">{paragraph}</p> : null

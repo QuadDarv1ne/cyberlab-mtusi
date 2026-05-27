@@ -34,7 +34,7 @@ export async function GET(req: Request) {
     const limit = parseInt(searchParams.get('limit') || '9')
 
     // Validate pagination
-    if (page < 1 || limit < 1 || limit > 50) {
+    if (Number.isNaN(page) || Number.isNaN(limit) || page < 1 || limit < 1 || limit > 50) {
       return NextResponse.json({ error: 'Invalid pagination parameters' }, { status: 400 })
     }
     const slug = searchParams.get('slug')
