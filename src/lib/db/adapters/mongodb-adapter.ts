@@ -163,13 +163,15 @@ export class MongoAdapter extends DatabaseAdapter {
       { $set: data }
     )
     const doc = await this.cols.labProgress.findOne({ _id: this.toObjectId(where.id) })
-    return this.mapDoc<LabProgress>(doc!)
+    if (!doc) throw new Error(`LabProgress ${where.id} not found after update`)
+    return this.mapDoc<LabProgress>(doc)
   }
 
   async labProgressCreate({ data }: { data: Record<string, unknown> }): Promise<LabProgress> {
     const result = await this.cols.labProgress.insertOne(data)
     const doc = await this.cols.labProgress.findOne({ _id: result.insertedId })
-    return this.mapDoc<LabProgress>(doc!)
+    if (!doc) throw new Error(`LabProgress not found after create`)
+    return this.mapDoc<LabProgress>(doc)
   }
 
   // LabFlag operations

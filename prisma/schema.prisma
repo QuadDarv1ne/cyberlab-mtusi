@@ -43,6 +43,8 @@ model LabFlag {
   points   Int    @default(10)
   hint     String?
   lab      Lab    @relation(fields: [labId], references: [id], onDelete: Cascade)
+
+  @@index([labId])
 }
 
 model LabProgress {
