@@ -35,9 +35,9 @@ describe('Password hashing with bcrypt', () => {
 
   it('should use correct salt rounds', async () => {
     const password = 'Test123!'
-    const hash = await bcrypt.hash(password, 10)
+    const hash = await bcrypt.hash(password, 12)
 
     const rounds = parseInt(hash.split('$')[2], 10)
-    expect(rounds).toBe(10)
+    expect(rounds).toBe(12)
   })
 })

@@ -225,7 +225,7 @@ export default function CyberLab() {
       const res = await fetch('/api/flags', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentId: currentStudent.id, labId, flagKey, flagValue: flagValue.trim() })
+        body: JSON.stringify({ labId, flagKey, flagValue: flagValue.trim() })
       })
       const data = await res.json()
 

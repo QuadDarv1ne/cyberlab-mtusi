@@ -44,7 +44,8 @@ export async function POST(req: Request) {
     })
 
     return NextResponse.json({ success: true })
-  } catch {
+  } catch (error) {
+    console.error('[register] Registration error:', error)
     return NextResponse.json(
       { error: 'Внутренняя ошибка сервера' },
       { status: 500 }

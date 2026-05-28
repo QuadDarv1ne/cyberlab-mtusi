@@ -29,10 +29,16 @@ export default function RegisterPage() {
       return
     }
 
-    if (password.length < 6) {
+    const passwordErrors: string[] = []
+    if (password.length < 8) passwordErrors.push('Минимум 8 символов')
+    if (!/[A-Z]/.test(password)) passwordErrors.push('Нужна хотя бы одна заглавная буква')
+    if (!/[a-z]/.test(password)) passwordErrors.push('Нужна хотя бы одна строчная буква')
+    if (!/[0-9]/.test(password)) passwordErrors.push('Нужна хотя бы одна цифра')
+
+    if (passwordErrors.length > 0) {
       toast({
         title: 'Ошибка',
-        description: 'Пароль должен содержать минимум 6 символов',
+        description: passwordErrors.join('. '),
         variant: 'destructive',
       })
       return
@@ -110,9 +116,9 @@ export default function RegisterPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Минимум 6 символов"
+                placeholder="Минимум 8 символов, A-Z, a-z, 0-9"
                 required
-                minLength={6}
+                minLength={8}
                 className="bg-slate-800 border-slate-700"
               />
             </div>
@@ -124,7 +130,7 @@ export default function RegisterPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Повторите пароль"
                 required
-                minLength={6}
+                minLength={8}
                 className="bg-slate-800 border-slate-700"
               />
             </div>
