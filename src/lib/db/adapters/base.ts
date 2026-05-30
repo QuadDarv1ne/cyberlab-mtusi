@@ -113,6 +113,13 @@ export abstract class DatabaseAdapter {
   abstract articleCreate(args: {
     data: Record<string, unknown>
   }): Promise<Article>
+  abstract articleUpdate(args: {
+    where: { slug: string }
+    data: Record<string, unknown>
+  }): Promise<Article>
+  abstract articleDelete(args: {
+    where: { slug: string }
+  }): Promise<void>
 
   // Dashboard aggregation (optimized per-database)
   abstract getDashboardData(): Promise<DashboardData>

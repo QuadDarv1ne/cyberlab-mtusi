@@ -138,3 +138,96 @@ export async function POST(req: Request) {
     return NextResponse.json(article, { status: 201 })
   }, 'POST /api/articles')
 }
+
+// Partial update schema — all fields optional except slug (in URL)
+const articleUpdateSchema = articleSchema.partial()
+
+export async function PUT(req: Request) {
+  return withErrorHandling(async () => {
+    const userRole = req.headers.get('x-user-role')
+    const userId = req.headers.get('x-user-id')
+    if (!userId || userRole !== 'ADMIN') {
+      return NextResponse.json({ error: 'Недостаточно прав' }, { status: 403 })
+    }
+
+    const clientIp = getClientIp(req)
+    const rate = checkRateLimit(`articles-put:${clientIp}`, { maxRequests: 10 })
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Слишком много попыток. Подождите.' },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfter) } }
+      )
+    }
+
+    const { searchParams } = new URL(req.url)
+    const slug = searchParams.get('slug')
+    if (!slug) {
+      return NextResponse.json({ error: 'Slug is required' }, { status: 400 })
+    }
+
+    const existing = await db.articleFindUnique({ where: { slug } })
+    if (!existing) {
+      return NextResponse.json({ error: 'Article not found' }, { status: 404 })
+    }
+
+    let body
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    }
+
+    const parsed = articleUpdateSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid request' }, { status: 400 })
+    }
+
+    // XSS sanitization on provided fields
+    const sanitizedData: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(parsed.data)) {
+      if (typeof value === 'string') {
+        sanitizedData[key] = sanitizeHtml(value)
+      } else if (key === 'tags' && Array.isArray(value)) {
+        sanitizedData[key] = JSON.stringify(value)
+      } else {
+        sanitizedData[key] = value
+      }
+    }
+
+    const article = await db.articleUpdate({ where: { slug }, data: sanitizedData })
+    return NextResponse.json(article)
+  }, 'PUT /api/articles')
+}
+
+export async function DELETE(req: Request) {
+  return withErrorHandling(async () => {
+    const userRole = req.headers.get('x-user-role')
+    const userId = req.headers.get('x-user-id')
+    if (!userId || userRole !== 'ADMIN') {
+      return NextResponse.json({ error: 'Недостаточно прав' }, { status: 403 })
+    }
+
+    const clientIp = getClientIp(req)
+    const rate = checkRateLimit(`articles-delete:${clientIp}`, { maxRequests: 5 })
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Слишком много попыток. Подождите.' },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfter) } }
+      )
+    }
+
+    const { searchParams } = new URL(req.url)
+    const slug = searchParams.get('slug')
+    if (!slug) {
+      return NextResponse.json({ error: 'Slug is required' }, { status: 400 })
+    }
+
+    const existing = await db.articleFindUnique({ where: { slug } })
+    if (!existing) {
+      return NextResponse.json({ error: 'Article not found' }, { status: 404 })
+    }
+
+    await db.articleDelete({ where: { slug } })
+    return NextResponse.json({ success: true })
+  }, 'DELETE /api/articles')
+}

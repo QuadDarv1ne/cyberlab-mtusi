@@ -343,6 +343,21 @@ export class MongoAdapter extends DatabaseAdapter {
     }
   }
 
+  async articleUpdate({ where, data }: { where: { slug: string }; data: Record<string, unknown> }): Promise<Article> {
+    await this.cols.articles.updateOne(
+      { slug: where.slug },
+      { $set: { ...data, updatedAt: new Date() } }
+    )
+    const doc = await this.cols.articles.findOne({ slug: where.slug })
+    if (!doc) throw new Error(`Article ${where.slug} not found after update`)
+    return { ...doc, id: doc._id.toString() } as unknown as Article
+  }
+
+  async articleDelete({ where }: { where: { slug: string } }): Promise<void> {
+    const result = await this.cols.articles.deleteOne({ slug: where.slug })
+    if (result.deletedCount === 0) throw new Error(`Article ${where.slug} not found`)
+  }
+
   // Dashboard aggregation using MongoDB aggregation pipeline
   async getDashboardData(): Promise<DashboardData> {
     const students = await this.cols.students.find({}).toArray()

@@ -137,6 +137,16 @@ export class PrismaAdapter extends DatabaseAdapter {
     return this.client.article.create(args as any)
   }
 
+  async articleUpdate(args: { where: { slug: string }; data: Record<string, unknown> }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return this.client.article.update(args as any)
+  }
+
+  async articleDelete(args: { where: { slug: string } }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await this.client.article.delete(args as any)
+  }
+
   // Dashboard aggregation
   async getDashboardData(): Promise<DashboardData> {
     const students = await this.client.student.findMany({

@@ -50,6 +50,7 @@ export async function middleware(request: NextRequest) {
     response.cookies.set('clid', clientId, {
       httpOnly: true,
       sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
       maxAge: 60 * 60 * 24 * 365,
       path: '/',
     })
