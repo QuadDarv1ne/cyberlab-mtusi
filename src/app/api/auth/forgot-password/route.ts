@@ -14,12 +14,20 @@ function delay(ms: number): Promise<void> {
 }
 
 export async function POST(req: Request) {
+  let body: unknown
   try {
-    const { email } = await req.json()
-    if (!email) {
-      return NextResponse.json({ error: 'Email обязателен' }, { status: 400 })
-    }
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Неверный формат запроса' }, { status: 400 })
+  }
 
+  const { email } = body as { email?: unknown }
+
+  if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return NextResponse.json({ error: 'Email обязателен' }, { status: 400 })
+  }
+
+  try {
     const user = await db.userFindUnique({ where: { email } })
 
     if (user) {

@@ -19,26 +19,26 @@ const registerSchema = z.object({
 })
 
 export async function POST(req: Request) {
+  const clientIp = getClientIp(req)
+  const rateLimit = checkRateLimit(clientIp, { maxRequests: 5, windowMs: 60_000 })
+
+  const headers: Record<string, string> = {
+    'X-RateLimit-Limit': '5',
+    'X-RateLimit-Remaining': String(rateLimit.remaining),
+  }
+
+  if (rateLimit.retryAfter) {
+    headers['Retry-After'] = String(rateLimit.retryAfter)
+  }
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Слишком много попыток регистрации. Попробуйте позже' },
+      { status: 429, headers }
+    )
+  }
+
   try {
-    const clientIp = getClientIp(req)
-    const rateLimit = checkRateLimit(clientIp, { maxRequests: 5, windowMs: 60_000 })
-
-    const headers: Record<string, string> = {
-      'X-RateLimit-Limit': '5',
-      'X-RateLimit-Remaining': String(rateLimit.remaining),
-    }
-
-    if (rateLimit.retryAfter) {
-      headers['Retry-After'] = String(rateLimit.retryAfter)
-    }
-
-    if (!rateLimit.allowed) {
-      return NextResponse.json(
-        { error: 'Слишком много попыток регистрации. Попробуйте позже' },
-        { status: 429, headers }
-      )
-    }
-
     const body = await req.json()
     const parsed = registerSchema.safeParse(body)
 
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
     logger.error('[register] Registration error:', error)
     return NextResponse.json(
       { error: 'Внутренняя ошибка сервера' },
-      { status: 500 }
+      { status: 500, headers }
     )
   }
 }

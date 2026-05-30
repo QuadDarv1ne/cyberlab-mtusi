@@ -1,9 +1,11 @@
 import { MongoClient, ObjectId } from 'mongodb'
 import type { DbType } from './base';
 import { DatabaseAdapter } from './base'
-import type { TransactionContext, DashboardData, LabProgress, FlagSubmission, Article, Student, Lab, LabFlag, RecentSubmission } from '../types'
+import type { TransactionContext, DashboardData, LabProgress, FlagSubmission, Article, Student, Lab, LabFlag, RecentSubmission, User } from '../types'
 
 interface Collections {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  users: any
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   students: any
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,6 +38,7 @@ export class MongoAdapter extends DatabaseAdapter {
     const dbName = process.env.MONGODB_DB || 'cyberlab'
     const db = this.client.db(dbName)
     this.collections = {
+      users: db.collection('users'),
       students: db.collection('students'),
       labs: db.collection('labs'),
       labFlags: db.collection('lab_flags'),
@@ -92,6 +95,54 @@ export class MongoAdapter extends DatabaseAdapter {
   // Helper: Map _id to id for an array of documents
   private mapDocs<T>(docs: Record<string, unknown>[]): T[] {
     return docs.map(doc => this.mapDoc<T>(doc))
+  }
+
+  // User operations
+  async userFindUnique({ where, include }: {
+    where: { id: string } | { email: string }
+    include?: Record<string, unknown>
+  }): Promise<User | null> {
+    const query = 'id' in where
+      ? { _id: this.toObjectId(where.id) }
+      : { email: where.email }
+
+    const doc = await this.cols.users.findOne(query)
+    if (!doc) return null
+
+    const user = this.mapDoc<User>(doc)
+
+    if (include?.student) {
+      const student = await this.cols.students.findOne({ _id: this.toObjectId(doc.studentId as string) })
+      user.student = student ? this.mapDoc<Student>(student) : null
+    }
+
+    return user
+  }
+
+  async userCreate({ data }: { data: Record<string, unknown> }): Promise<User> {
+    const result = await this.cols.users.insertOne(data)
+    const doc = await this.cols.users.findOne({ _id: result.insertedId })
+    if (!doc) throw new Error('User not found after create')
+    return this.mapDoc<User>(doc)
+  }
+
+  async userUpdate({ where, data }: { where: { id: string }; data: Record<string, unknown> }): Promise<User> {
+    await this.cols.users.updateOne(
+      { _id: this.toObjectId(where.id) },
+      { $set: data }
+    )
+    const doc = await this.cols.users.findOne({ _id: this.toObjectId(where.id) })
+    if (!doc) throw new Error(`User ${where.id} not found after update`)
+    return this.mapDoc<User>(doc)
+  }
+
+  async userFindMany({ where, select }: {
+    where?: Record<string, unknown>
+    select?: Record<string, unknown>
+  }): Promise<User[]> {
+    const projection = select ? this.mapSelectToProjection(select) : {}
+    const docs = await this.cols.users.find(where || {}, { projection }).toArray()
+    return this.mapDocs<User>(docs)
   }
 
   // Student operations
@@ -377,12 +428,14 @@ export class MongoAdapter extends DatabaseAdapter {
     try {
       return await session.withTransaction(async () => {
         const txCols: Collections = {
+          users: this.cols.users.withSession(session),
           students: this.cols.students.withSession(session),
           labs: this.cols.labs.withSession(session),
           labFlags: this.cols.labFlags.withSession(session),
           labProgress: this.cols.labProgress.withSession(session),
           flagSubmissions: this.cols.flagSubmissions.withSession(session),
           articles: this.cols.articles.withSession(session),
+          passwordResetTokens: this.cols.passwordResetTokens.withSession(session),
         }
 
         return fn({
