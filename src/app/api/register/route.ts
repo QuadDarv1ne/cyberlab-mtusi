@@ -39,7 +39,15 @@ export async function POST(req: Request) {
       )
     }
 
-    const body = await req.json()
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json(
+        { error: 'Неверный формат запроса' },
+        { status: 400, headers }
+      )
+    }
     const parsed = registerSchema.safeParse(body)
 
     if (!parsed.success) {

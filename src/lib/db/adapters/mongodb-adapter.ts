@@ -191,7 +191,10 @@ export class MongoAdapter extends DatabaseAdapter {
     if (!lab) return null
 
     if (include?.flags) {
-      const flags = await this.cols.labFlags.find({ labId: lab._id.toString() }).toArray()
+      const flags = await this.cols.labFlags
+        .find({ labId: lab._id.toString() })
+        .project({ flagValue: 0 })
+        .toArray()
       lab.flags = flags.map((f: { _id: { toString(): string } }) => ({ ...f, id: f._id.toString() }))
     }
 

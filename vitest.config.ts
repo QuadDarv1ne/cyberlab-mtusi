@@ -9,7 +9,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      include: ['src/lib/constant-time-compare.ts', 'src/lib/rate-limiter.ts', 'src/lib/api-helpers.ts'],
+      include: ['src/lib/constant-time-compare.ts', 'src/lib/rate-limiter.ts', 'src/lib/api-helpers.ts', 'src/lib/auth.ts'],
     },
   },
   resolve: {
