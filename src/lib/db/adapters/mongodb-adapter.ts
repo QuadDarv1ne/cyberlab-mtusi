@@ -485,7 +485,10 @@ export class MongoAdapter extends DatabaseAdapter {
             create: async (args: { data: Record<string, unknown> }) => {
               const result = await txCols.labProgress.insertOne(args.data)
               const doc = await txCols.labProgress.findOne({ _id: result.insertedId })
-              return doc ? { ...doc, id: doc._id.toString() } : null
+              if (!doc) {
+                throw new Error('LabProgress document not found after create')
+              }
+              return { ...doc, id: doc._id.toString() }
             },
           },
           lab: {

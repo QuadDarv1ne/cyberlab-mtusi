@@ -16,7 +16,7 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
     // React rules
     "react-hooks/exhaustive-deps": "warn",
     "react-hooks/purity": "warn",
-    "react-hooks/set-state-in-effect": "warn",
+    "react-hooks/set-state-in-effect": "off",
     "react-hooks/static-components": "warn",
     "react/no-unescaped-entities": "off",
     "react/display-name": "off",

@@ -42,7 +42,13 @@ export default function CyberLab() {
   const [progressRecords, setProgressRecords] = useState<ProgressRecord[]>([])
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [darkMode, setDarkMode] = useState(false)
+  const [darkMode, setDarkMode] = useState(() => {
+    try {
+      return localStorage.getItem('cyberlab-dark-mode') === 'true'
+    } catch {
+      return false
+    }
+  })
   const [showUserMenu, setShowUserMenu] = useState(false)
 
   // Authenticated user's linked student
@@ -51,14 +57,7 @@ export default function CyberLab() {
     return students.find(s => s.id === session.user.studentId) || null
   }, [session, students])
 
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('cyberlab-dark-mode')
-      if (saved === 'true') setDarkMode(true)
-    } catch {
-      // localStorage unavailable
-    }
-  }, [])
+
   const [submitting, setSubmitting] = useState<Record<string, boolean>>({})
   const [catalogSearch, setCatalogSearch] = useState('')
   const [catalogCategoryFilter, setCatalogCategoryFilter] = useState<string>('all')
@@ -150,7 +149,7 @@ export default function CyberLab() {
 
   useEffect(() => {
     if (activeTab === 'dashboard' && selectedStudent) {
-      fetchProgress()
+      void fetchProgress()
     }
   }, [activeTab, selectedStudent, fetchProgress])
 
@@ -202,7 +201,7 @@ export default function CyberLab() {
 
   useEffect(() => {
     if (activeTab === 'blog') {
-      fetchArticles(blogPage, debouncedBlogSearch, blogCategory)
+      void fetchArticles(blogPage, debouncedBlogSearch, blogCategory)
     }
   }, [activeTab, blogPage, debouncedBlogSearch, blogCategory, fetchArticles])
 

@@ -3,8 +3,19 @@ import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import { consumeResetToken } from '@/lib/reset-tokens'
 import { logger } from '@/lib/logger'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 
 export async function POST(req: Request) {
+  // Rate limit: 5 reset attempts per IP per 15 minutes to prevent token brute-forcing
+  const clientIp = getClientIp(req)
+  const rate = checkRateLimit(`reset-password:${clientIp}`, { maxRequests: 5, windowMs: 15 * 60 * 1000 })
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: 'Слишком много попыток. Попробуйте позже' },
+      { status: 429, headers: { 'Retry-After': String(rate.retryAfter) } }
+    )
+  }
+
   let body: unknown
   try {
     body = await req.json()

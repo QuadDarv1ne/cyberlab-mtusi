@@ -3,8 +3,9 @@ import { useState, useEffect } from 'react'
 export function useCountUp(end: number, duration: number = 800, visible: boolean = true) {
   const shouldAnimate = visible && duration > 0
   const [count, setCount] = useState(shouldAnimate ? 0 : end)
+
   useEffect(() => {
-    if (!shouldAnimate) {
+    if (!visible || duration <= 0) {
       setCount(end)
       return undefined
     }
