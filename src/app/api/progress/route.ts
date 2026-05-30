@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { cachedJson, withErrorHandling } from '@/lib/api-helpers'
 import { NextResponse } from 'next/server'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
+import { auth } from '@/auth'
 
 export async function GET(req: Request) {
   return withErrorHandling(async () => {
@@ -9,12 +10,12 @@ export async function GET(req: Request) {
     const studentId = searchParams.get('studentId')
 
     if (!studentId) {
-      return NextResponse.json({ error: 'studentId is required' }, { status: 400 })
+      return NextResponse.json({ error: 'studentId обязателен' }, { status: 400 })
     }
 
     // Relaxed validation: allow alphanumeric, hyphens, underscores (e.g. seed-student-1)
     if (studentId.length > 100 || !/^[a-zA-Z0-9_-]+$/.test(studentId)) {
-      return NextResponse.json({ error: 'Invalid studentId format' }, { status: 400 })
+      return NextResponse.json({ error: 'Неверный формат studentId' }, { status: 400 })
     }
 
     // Rate limit: 20 requests per minute per IP to prevent student data enumeration
@@ -24,6 +25,22 @@ export async function GET(req: Request) {
       return NextResponse.json(
         { error: 'Слишком много запросов. Подождите.' },
         { status: 429, headers: { 'Retry-After': String(rate.retryAfter) } }
+      )
+    }
+
+    // Authorization: students can only view their own progress, admins can view any
+    const session = await auth()
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Требуется авторизация' }, { status: 401 })
+    }
+
+    const isAdmin = session.user.role === 'ADMIN'
+    const userStudentId = session.user.studentId
+
+    if (!isAdmin && userStudentId !== studentId) {
+      return NextResponse.json(
+        { error: 'Доступ запрещён' },
+        { status: 403 }
       )
     }
 

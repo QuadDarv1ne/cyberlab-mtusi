@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { cachedJson, withErrorHandling } from '@/lib/api-helpers'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 import { NextResponse } from 'next/server'
+import { auth } from '@/auth'
 
 export async function GET(req: Request) {
   return withErrorHandling(async () => {
@@ -12,6 +13,15 @@ export async function GET(req: Request) {
       return NextResponse.json(
         { error: 'Слишком много запросов. Подождите.' },
         { status: 429, headers: { 'Retry-After': String(rate.retryAfter) } }
+      )
+    }
+
+    // Admin-only: student list includes progress data
+    const session = await auth()
+    if (!session?.user || session.user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Доступ запрещён' },
+        { status: 403 }
       )
     }
 

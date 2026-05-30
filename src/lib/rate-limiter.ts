@@ -59,18 +59,22 @@ export function checkRateLimit(
 
 /**
  * Get client IP address from request headers.
- * Handles various proxy configurations (X-Forwarded-For, X-Real-IP).
+ * Only trusts x-forwarded-for when NODE_ENV is production (behind a reverse proxy
+ * that strips client-supplied headers). In development, uses the direct connection.
  * Falls back to a per-session unique ID via cookie to prevent all
  * unidentified clients from sharing the same rate-limit bucket.
  */
 export function getClientIp(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for')
-  if (forwarded) {
-    return forwarded.split(',')[0].trim()
-  }
-  const realIp = request.headers.get('x-real-ip')
-  if (realIp) {
-    return realIp
+  // In production behind a reverse proxy, trust x-forwarded-for
+  if (process.env.NODE_ENV === 'production') {
+    const forwarded = request.headers.get('x-forwarded-for')
+    if (forwarded) {
+      return forwarded.split(',')[0].trim()
+    }
+    const realIp = request.headers.get('x-real-ip')
+    if (realIp) {
+      return realIp
+    }
   }
 
   // Use client ID set by middleware (cookie or forwarded header)
