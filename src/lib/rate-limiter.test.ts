@@ -29,7 +29,7 @@ describe('rate-limiter', () => {
       expect(result.allowed).toBe(false)
       expect(result.remaining).toBe(0)
       expect(result.retryAfter).toBeDefined()
-      expect(result.retryAfter! > 0).toBe(true)
+      expect(result.retryAfter != null && result.retryAfter > 0).toBe(true)
     })
 
     it('should reset after window expires', async () => {

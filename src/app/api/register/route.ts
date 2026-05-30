@@ -3,7 +3,7 @@ import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
-import { logger } from '@/lib/logger'
+import { withErrorHandling } from '@/lib/api-helpers'
 
 const registerSchema = z.object({
   name: z.string().min(1, 'Имя обязательно').max(100),
@@ -19,26 +19,26 @@ const registerSchema = z.object({
 })
 
 export async function POST(req: Request) {
-  const clientIp = getClientIp(req)
-  const rateLimit = checkRateLimit(clientIp, { maxRequests: 5, windowMs: 60_000 })
+  return withErrorHandling(async () => {
+    const clientIp = getClientIp(req)
+    const rateLimit = checkRateLimit(clientIp, { maxRequests: 5, windowMs: 60_000 })
 
-  const headers: Record<string, string> = {
-    'X-RateLimit-Limit': '5',
-    'X-RateLimit-Remaining': String(rateLimit.remaining),
-  }
+    const headers: Record<string, string> = {
+      'X-RateLimit-Limit': '5',
+      'X-RateLimit-Remaining': String(rateLimit.remaining),
+    }
 
-  if (rateLimit.retryAfter) {
-    headers['Retry-After'] = String(rateLimit.retryAfter)
-  }
+    if (rateLimit.retryAfter) {
+      headers['Retry-After'] = String(rateLimit.retryAfter)
+    }
 
-  if (!rateLimit.allowed) {
-    return NextResponse.json(
-      { error: 'Слишком много попыток регистрации. Попробуйте позже' },
-      { status: 429, headers }
-    )
-  }
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Слишком много попыток регистрации. Попробуйте позже' },
+        { status: 429, headers }
+      )
+    }
 
-  try {
     const body = await req.json()
     const parsed = registerSchema.safeParse(body)
 
@@ -66,11 +66,5 @@ export async function POST(req: Request) {
     })
 
     return NextResponse.json({ success: true }, { headers })
-  } catch (error) {
-    logger.error('[register] Registration error:', error)
-    return NextResponse.json(
-      { error: 'Внутренняя ошибка сервера' },
-      { status: 500, headers }
-    )
-  }
+  }, 'POST /api/register')
 }

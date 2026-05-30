@@ -39,3 +39,7 @@ bun.lock
 
 # TypeScript incremental build
 *.tsbuildinfo
+
+# Dev logs
+dev.log
+*.log

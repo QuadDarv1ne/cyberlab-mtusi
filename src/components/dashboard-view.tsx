@@ -4,7 +4,6 @@ import { useMemo } from 'react'
 import { BarChart3, Target, GraduationCap, FileSearch, CheckCircle2, AlertCircle, Clock, Trophy } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -16,13 +15,11 @@ import type { DashboardData, Lab, StudentDb, ProgressRecord } from '@/types'
 export function DashboardView({
   dashboard,
   selectedStudent,
-  students,
   labs,
   progressRecords,
 }: {
   dashboard: DashboardData
   selectedStudent: StudentDb | null
-  students: StudentDb[]
   labs: Lab[]
   progressRecords: ProgressRecord[]
 }) {

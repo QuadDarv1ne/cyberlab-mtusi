@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { auth } from '@/auth'
 
-const protectedApiRoutes = ['/api/flags', '/api/articles']
+const protectedApiRoutes = ['/api/flags', '/api/articles', '/api/students']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl

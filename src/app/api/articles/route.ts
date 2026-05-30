@@ -12,7 +12,7 @@ const articleSchema = z.object({
   content: z.string().min(1, 'Content is required'),
   author: z.string().min(1, 'Author is required'),
   category: z.string().min(1, 'Category is required'),
-  tags: z.string().optional().default('[]'),
+  tags: z.array(z.string()).optional().default([]),
   coverImage: z.string().optional(),
 })
 
@@ -126,6 +126,7 @@ export async function POST(req: Request) {
       content: sanitizeHtml(parsed.data.content),
       author: sanitizeHtml(parsed.data.author),
       category: sanitizeHtml(parsed.data.category),
+      tags: JSON.stringify(parsed.data.tags),
     }
 
     const existing = await db.articleFindUnique({ where: { slug: sanitizedData.slug } })

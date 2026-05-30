@@ -27,7 +27,8 @@
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
-    "docker:reset": "docker-compose down -v"
+    "docker:reset": "docker-compose down -v",
+    "secret:generate": "node scripts/generate-secret.js"
   },
   "dependencies": {
     "@prisma/client": "^6.11.1",

@@ -2,7 +2,6 @@ import { db } from '@/lib/db'
 import { cachedJson, withErrorHandling } from '@/lib/api-helpers'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 import { NextResponse } from 'next/server'
-import { auth } from '@/auth'
 
 export async function GET(req: Request) {
   return withErrorHandling(async () => {
@@ -17,8 +16,11 @@ export async function GET(req: Request) {
     }
 
     // Admin-only: student list includes progress data
-    const session = await auth()
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    const headers = new Headers(req.headers)
+    const userId = headers.get('x-user-id')
+    const userRole = headers.get('x-user-role')
+
+    if (!userId || userRole !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Доступ запрещён' },
         { status: 403 }

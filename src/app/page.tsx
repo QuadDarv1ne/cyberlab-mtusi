@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import {
-  Shield, FileText, Menu, X, Moon, Sun, GraduationCap, LogOut, User
+  Shield, FileText, Menu, X, Moon, Sun, LogOut, User
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -461,7 +461,6 @@ export default function CyberLab() {
             <DashboardView
               dashboard={dashboard}
               selectedStudent={selectedStudent}
-              students={students}
               labs={labs}
               progressRecords={progressRecords}
             />
