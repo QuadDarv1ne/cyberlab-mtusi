@@ -73,21 +73,23 @@ export function getClientIp(request: Request): string {
     return realIp
   }
 
-  // Use a persistent client ID set by middleware (cookie or forwarded header)
+  // Use client ID set by middleware (cookie or forwarded header)
   const clientId = request.headers.get('x-client-id')
   if (clientId) {
     return `anon:${clientId}`
   }
 
-  // Fallback: check for clid cookie directly
+  // Fallback: check for clid cookie directly (should be set by middleware)
   const cookieHeader = request.headers.get('cookie') ?? ''
   const match = cookieHeader.match(/(?:^|;\s*)clid=([^;]+)/)
   if (match) {
     return `anon:${match[1]}`
   }
 
-  // Last resort: generate unique ID per request (no persistent identity available)
-  return `anon:${crypto.randomUUID()}`
+  // No persistent identity available - use a fixed fallback to prevent
+  // rate limit bypass. Using a constant ensures all unidentified clients
+  // share the same rate limit bucket rather than getting unlimited requests.
+  return 'anon:unknown'
 }
 
 
