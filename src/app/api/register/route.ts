@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
+import { logger } from '@/lib/logger'
 
 const registerSchema = z.object({
   name: z.string().min(1, 'Имя обязательно').max(100),
@@ -61,12 +62,12 @@ export async function POST(req: Request) {
     const passwordHash = await bcrypt.hash(password, 12)
 
     await db.userCreate({
-      data: { name, email, passwordHash, role: 'STUDENT' }
+      data: { name, email, passwordHash, role: 'STUDENT', emailVerified: null }
     })
 
     return NextResponse.json({ success: true }, { headers })
   } catch (error) {
-    console.error('[register] Registration error:', error)
+    logger.error('[register] Registration error:', error)
     return NextResponse.json(
       { error: 'Внутренняя ошибка сервера' },
       { status: 500 }

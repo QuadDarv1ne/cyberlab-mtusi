@@ -1,41 +1,26 @@
 /**
- * In-memory store for password reset tokens.
- * Each token maps to a user ID and expiration timestamp.
- *
- * Note: In production, replace with Redis or database-backed storage
- * to support horizontal scaling and persistence across restarts.
+ * Database-backed password reset token store.
+ * Tokens persist across server restarts and support horizontal scaling.
  */
 
-interface ResetTokenEntry {
-  userId: string
-  expires: number
-}
+import { db } from '@/lib/db'
 
-const resetTokens = new Map<string, ResetTokenEntry>()
+const RESET_TOKEN_TTL_MS = 3600000 // 1 hour
 
-export function createResetToken(userId: string, ttlMs: number = 3600000): string {
+export async function createResetToken(userId: string): Promise<string> {
   const token = crypto.randomUUID()
-  resetTokens.set(token, { userId, expires: Date.now() + ttlMs })
+  const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS)
 
-  // Cleanup expired tokens on each creation
-  for (const [key, entry] of resetTokens) {
-    if (entry.expires < Date.now()) {
-      resetTokens.delete(key)
-    }
-  }
+  // Clean up expired tokens on each creation
+  await db.passwordResetTokenCleanup()
+
+  await db.passwordResetTokenCreate({
+    data: { token, userId, expiresAt }
+  })
 
   return token
 }
 
-export function consumeResetToken(token: string): { userId: string } | null {
-  const entry = resetTokens.get(token)
-  if (!entry) return null
-
-  if (entry.expires < Date.now()) {
-    resetTokens.delete(token)
-    return null
-  }
-
-  resetTokens.delete(token)
-  return { userId: entry.userId }
+export async function consumeResetToken(token: string): Promise<{ userId: string } | null> {
+  return db.passwordResetTokenConsume({ where: { token } })
 }

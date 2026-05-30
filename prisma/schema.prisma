@@ -100,6 +100,17 @@ model FlagSubmission {
   @@index([studentId, correct])
 }
 
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+}
+
 model Article {
   id          String   @id @default(cuid())
   slug        String   @unique

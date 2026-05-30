@@ -121,4 +121,13 @@ export abstract class DatabaseAdapter {
   abstract transaction<T>(
     fn: (tx: TransactionContext) => Promise<T>
   ): Promise<T>
+
+  // Password reset token operations
+  abstract passwordResetTokenCreate(args: {
+    data: Record<string, unknown>
+  }): Promise<{ id: string; token: string; userId: string; expiresAt: Date }>
+  abstract passwordResetTokenConsume(args: {
+    where: { token: string }
+  }): Promise<{ userId: string } | null>
+  abstract passwordResetTokenCleanup(): Promise<void>
 }

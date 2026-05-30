@@ -16,6 +16,8 @@ interface Collections {
   flagSubmissions: any
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   articles: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  passwordResetTokens: any
 }
 
 export class MongoAdapter extends DatabaseAdapter {
@@ -40,6 +42,7 @@ export class MongoAdapter extends DatabaseAdapter {
       labProgress: db.collection('lab_progress'),
       flagSubmissions: db.collection('flag_submissions'),
       articles: db.collection('articles'),
+      passwordResetTokens: db.collection('password_reset_tokens'),
     }
   }
 
@@ -453,5 +456,33 @@ export class MongoAdapter extends DatabaseAdapter {
   // Expose raw client for MongoDB-specific seed scripts
   override get rawClient(): MongoClient {
     return this.client
+  }
+
+  // Password reset token operations
+  async passwordResetTokenCreate(args: { data: Record<string, unknown> }) {
+    const result = await this.cols.passwordResetTokens.insertOne(args.data)
+    return {
+      id: result.insertedId.toString(),
+      token: args.data.token as string,
+      userId: args.data.userId as string,
+      expiresAt: args.data.expiresAt as Date,
+    }
+  }
+
+  async passwordResetTokenConsume(args: { where: { token: string } }) {
+    const record = await this.cols.passwordResetTokens.findOne({ token: args.where.token })
+    if (!record) return null
+    if (new Date(record.expiresAt) < new Date()) {
+      await this.cols.passwordResetTokens.deleteOne({ _id: record._id })
+      return null
+    }
+    await this.cols.passwordResetTokens.deleteOne({ _id: record._id })
+    return { userId: record.userId }
+  }
+
+  async passwordResetTokenCleanup() {
+    await this.cols.passwordResetTokens.deleteMany({
+      expiresAt: { $lt: new Date() }
+    })
   }
 }

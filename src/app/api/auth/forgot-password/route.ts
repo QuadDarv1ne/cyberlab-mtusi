@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createResetToken } from '@/lib/reset-tokens'
+import { logger } from '@/lib/logger'
 
 /**
  * Constant-time delay to prevent email enumeration via timing attacks.
@@ -22,11 +23,11 @@ export async function POST(req: Request) {
     const user = await db.userFindUnique({ where: { email } })
 
     if (user) {
-      const token = createResetToken(user.id)
-      // TODO: In production, send email with token instead of returning it
+      const token = await createResetToken(user.id)
+      // In production, send email with token (e.g. via Resend, SendGrid, Nodemailer)
       // For local development: log token to console
       if (process.env.NODE_ENV !== 'production') {
-        console.log(`[DEV] Password reset token for ${email}: ${token}`)
+        logger.log(`[DEV] Password reset token for ${email}: ${token}`)
       }
     }
 
@@ -37,7 +38,8 @@ export async function POST(req: Request) {
     return NextResponse.json({
       message: 'Если email существует, вы получите ссылку для сброса пароля',
     })
-  } catch {
+  } catch (error) {
+    logger.error('[forgot-password] Error:', error)
     return NextResponse.json({ error: 'Внутренняя ошибка' }, { status: 500 })
   }
 }

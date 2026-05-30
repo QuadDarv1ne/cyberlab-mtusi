@@ -244,4 +244,28 @@ export class PrismaAdapter extends DatabaseAdapter {
   override get rawClient(): PrismaClient {
     return this.client
   }
+
+  // Password reset token operations
+  async passwordResetTokenCreate(args: { data: Record<string, unknown> }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return this.client.passwordResetToken.create(args as any)
+  }
+
+  async passwordResetTokenConsume(args: { where: { token: string } }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const record = await this.client.passwordResetToken.findUnique(args as any)
+    if (!record) return null
+    if (record.expiresAt < new Date()) {
+      await this.client.passwordResetToken.delete({ where: { id: record.id } })
+      return null
+    }
+    await this.client.passwordResetToken.delete({ where: { id: record.id } })
+    return { userId: record.userId }
+  }
+
+  async passwordResetTokenCleanup() {
+    await this.client.passwordResetToken.deleteMany({
+      where: { expiresAt: { lt: new Date() } }
+    })
+  }
 }

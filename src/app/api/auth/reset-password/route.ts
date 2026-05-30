@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import { consumeResetToken } from '@/lib/reset-tokens'
+import { logger } from '@/lib/logger'
 
 export async function POST(req: Request) {
   try {
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Нужен хотя бы один специальный символ' }, { status: 400 })
     }
 
-    const resetData = consumeResetToken(token)
+    const resetData = await consumeResetToken(token)
     if (!resetData) {
       return NextResponse.json({ error: 'Неверный или просроченный токен' }, { status: 400 })
     }
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[reset-password] Reset password error:', error)
+    logger.error('[reset-password] Reset password error:', error)
     return NextResponse.json({ error: 'Внутренняя ошибка' }, { status: 500 })
   }
 }
