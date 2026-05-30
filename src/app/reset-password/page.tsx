@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -26,8 +26,8 @@ function ResetForm() {
       return
     }
 
-    if (password.length < 8) {
-      toast({ title: 'Ошибка', description: 'Минимум 8 символов', variant: 'destructive' })
+    if (password.length < 10) {
+      toast({ title: 'Ошибка', description: 'Минимум 10 символов', variant: 'destructive' })
       return
     }
 
@@ -43,6 +43,11 @@ function ResetForm() {
 
     if (!/[0-9]/.test(password)) {
       toast({ title: 'Ошибка', description: 'Нужна хотя бы одна цифра', variant: 'destructive' })
+      return
+    }
+
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      toast({ title: 'Ошибка', description: 'Нужен хотя бы один специальный символ', variant: 'destructive' })
       return
     }
 
@@ -99,9 +104,9 @@ function ResetForm() {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Минимум 6 символов"
+          placeholder="Минимум 10 символов, A-Z, a-z, 0-9, спецсимвол"
           required
-          minLength={6}
+          minLength={10}
           className="bg-slate-800 border-slate-700"
         />
       </div>
@@ -113,7 +118,7 @@ function ResetForm() {
           onChange={(e) => setConfirmPassword(e.target.value)}
           placeholder="Повторите пароль"
           required
-          minLength={6}
+          minLength={10}
           className="bg-slate-800 border-slate-700"
         />
       </div>

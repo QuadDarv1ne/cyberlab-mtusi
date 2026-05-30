@@ -30,10 +30,11 @@ export default function RegisterPage() {
     }
 
     const passwordErrors: string[] = []
-    if (password.length < 8) passwordErrors.push('Минимум 8 символов')
+    if (password.length < 10) passwordErrors.push('Минимум 10 символов')
     if (!/[A-Z]/.test(password)) passwordErrors.push('Нужна хотя бы одна заглавная буква')
     if (!/[a-z]/.test(password)) passwordErrors.push('Нужна хотя бы одна строчная буква')
     if (!/[0-9]/.test(password)) passwordErrors.push('Нужна хотя бы одна цифра')
+    if (!/[^A-Za-z0-9]/.test(password)) passwordErrors.push('Нужен хотя бы один специальный символ')
 
     if (passwordErrors.length > 0) {
       toast({
@@ -116,9 +117,9 @@ export default function RegisterPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Минимум 8 символов, A-Z, a-z, 0-9"
+                placeholder="Минимум 10 символов, A-Z, a-z, 0-9, спецсимвол"
                 required
-                minLength={8}
+                minLength={10}
                 className="bg-slate-800 border-slate-700"
               />
             </div>
@@ -130,7 +131,7 @@ export default function RegisterPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Повторите пароль"
                 required
-                minLength={8}
+                minLength={10}
                 className="bg-slate-800 border-slate-700"
               />
             </div>

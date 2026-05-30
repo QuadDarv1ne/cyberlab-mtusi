@@ -11,8 +11,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Токен и пароль обязательны' }, { status: 400 })
     }
 
-    if (password.length < 8) {
-      return NextResponse.json({ error: 'Минимум 8 символов' }, { status: 400 })
+    if (password.length < 10) {
+      return NextResponse.json({ error: 'Минимум 10 символов' }, { status: 400 })
     }
 
     if (!/[A-Z]/.test(password)) {
@@ -25,6 +25,10 @@ export async function POST(req: Request) {
 
     if (!/[0-9]/.test(password)) {
       return NextResponse.json({ error: 'Нужна хотя бы одна цифра' }, { status: 400 })
+    }
+
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      return NextResponse.json({ error: 'Нужен хотя бы один специальный символ' }, { status: 400 })
     }
 
     const resetData = consumeResetToken(token)
