@@ -2,7 +2,6 @@ import { db } from '@/lib/db'
 import { cachedJson, withErrorHandling } from '@/lib/api-helpers'
 import { NextResponse } from 'next/server'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
-import { auth } from '@/auth'
 
 export async function GET(req: Request) {
   return withErrorHandling(async () => {
@@ -29,13 +28,15 @@ export async function GET(req: Request) {
     }
 
     // Authorization: students can only view their own progress, admins can view any
-    const session = await auth()
-    if (!session?.user) {
+    const userId = req.headers.get('x-user-id')
+    const userRole = req.headers.get('x-user-role')
+    const userStudentId = req.headers.get('x-user-student-id')
+
+    if (!userId) {
       return NextResponse.json({ error: 'Требуется авторизация' }, { status: 401 })
     }
 
-    const isAdmin = session.user.role === 'ADMIN'
-    const userStudentId = session.user.studentId
+    const isAdmin = userRole === 'ADMIN'
 
     if (!isAdmin && userStudentId !== studentId) {
       return NextResponse.json(
