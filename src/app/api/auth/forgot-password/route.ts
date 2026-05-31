@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createResetToken } from '@/lib/reset-tokens'
 import { logger } from '@/lib/logger'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 
 /**
  * Constant-time delay to prevent email enumeration via timing attacks.
@@ -14,6 +15,16 @@ function delay(ms: number): Promise<void> {
 }
 
 export async function POST(req: Request) {
+  // Rate limit: 3 forgot-password requests per IP per 15 minutes to prevent email enumeration brute-force
+  const clientIp = getClientIp(req)
+  const rate = checkRateLimit(`forgot-password:${clientIp}`, { maxRequests: 3, windowMs: 15 * 60 * 1000 })
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: 'Слишком много попыток. Попробуйте позже' },
+      { status: 429, headers: { 'Retry-After': String(rate.retryAfter) } }
+    )
+  }
+
   let body: unknown
   try {
     body = await req.json()

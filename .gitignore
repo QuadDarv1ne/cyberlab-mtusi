@@ -43,3 +43,6 @@ bun.lock
 # Dev logs
 dev.log
 *.log
+
+# Transient root-level docs
+CyberLab-README.md
