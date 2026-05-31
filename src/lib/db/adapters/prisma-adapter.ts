@@ -55,6 +55,11 @@ export class PrismaAdapter extends DatabaseAdapter {
     return this.client.student.findUnique(args as any)
   }
 
+  async studentCreate(args: { data: Record<string, unknown> }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return this.client.student.create(args as any)
+  }
+
   // Lab operations
   async labFindMany(args: { include?: Record<string, unknown>; orderBy?: Record<string, unknown> }) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

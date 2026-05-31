@@ -46,6 +46,9 @@ export abstract class DatabaseAdapter {
   abstract studentFindUnique(args: {
     where: { id: string }
   }): Promise<Student | null>
+  abstract studentCreate(args: {
+    data: Record<string, unknown>
+  }): Promise<Student>
 
   // Lab operations
   abstract labFindMany(args: {

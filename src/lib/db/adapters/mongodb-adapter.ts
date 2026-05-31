@@ -168,6 +168,13 @@ export class MongoAdapter extends DatabaseAdapter {
     return doc ? this.mapDoc<Student>(doc) : null
   }
 
+  async studentCreate({ data }: { data: Record<string, unknown> }): Promise<Student> {
+    const result = await this.cols.students.insertOne(data)
+    const doc = await this.cols.students.findOne({ _id: result.insertedId })
+    if (!doc) throw new Error('Student not found after create')
+    return this.mapDoc<Student>(doc)
+  }
+
   // Lab operations
   async labFindMany({ include, orderBy }: { include?: Record<string, unknown>; orderBy?: Record<string, unknown> }): Promise<Lab[]> {
     const sort = orderBy ? this.mapOrderByToSort(orderBy) : {}

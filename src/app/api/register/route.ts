@@ -69,8 +69,12 @@ export async function POST(req: Request) {
 
     const passwordHash = await bcrypt.hash(password, 12)
 
+    const student = await db.studentCreate({
+      data: { name, group: 'Новая группа', createdAt: new Date() }
+    })
+
     await db.userCreate({
-      data: { name, email, passwordHash, role: 'STUDENT', emailVerified: null }
+      data: { name, email, passwordHash, role: 'STUDENT', studentId: student.id, emailVerified: null }
     })
 
     return NextResponse.json({ success: true }, { headers })
