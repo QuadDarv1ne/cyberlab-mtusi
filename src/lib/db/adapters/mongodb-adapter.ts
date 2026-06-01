@@ -113,7 +113,7 @@ export class MongoAdapter extends DatabaseAdapter {
 
     if (include?.student) {
       const student = await this.cols.students.findOne({ _id: this.toObjectId(doc.studentId as string) })
-      user.student = student ? this.mapDoc<Student>(student) : null
+      ;(user as any).student = student ? this.mapDoc<Student>(student) : null
     }
 
     return user

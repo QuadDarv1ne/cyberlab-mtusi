@@ -67,23 +67,21 @@ describe('rate-limiter', () => {
 
   describe('getClientIp', () => {
     it('should use x-forwarded-for header when available (production)', () => {
-      const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = 'production'
+      vi.stubEnv('NODE_ENV', 'production')
       const request = new Request('http://localhost', {
         headers: { 'x-forwarded-for': '192.168.1.1, 10.0.0.1' }
       })
       expect(getClientIp(request)).toBe('192.168.1.1')
-      process.env.NODE_ENV = originalEnv
+      vi.unstubAllEnvs()
     })
 
     it('should use x-real-ip header when x-forwarded-for is not available (production)', () => {
-      const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = 'production'
+      vi.stubEnv('NODE_ENV', 'production')
       const request = new Request('http://localhost', {
         headers: { 'x-real-ip': '203.0.113.1' }
       })
       expect(getClientIp(request)).toBe('203.0.113.1')
-      process.env.NODE_ENV = originalEnv
+      vi.unstubAllEnvs()
     })
 
     it('should use x-client-id header from middleware', () => {

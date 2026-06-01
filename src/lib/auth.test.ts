@@ -37,7 +37,7 @@ describe('Password hashing with bcrypt', () => {
     const password = 'Test123!'
     const hash = await bcrypt.hash(password, 12)
 
-    const rounds = parseInt(hash.split('$')[2], 10)
+    const rounds = parseInt(hash.split('$')[2]!, 10)
     expect(rounds).toBe(12)
   })
 })

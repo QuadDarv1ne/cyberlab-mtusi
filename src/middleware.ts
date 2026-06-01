@@ -9,13 +9,8 @@ export async function middleware(request: NextRequest) {
 
   // Set a persistent client ID cookie + header if missing (required for anonymous rate limiting)
   const cookieHeader = request.headers.get('cookie') ?? ''
-  let clientId: string | null = null
   const match = cookieHeader.match(/(?:^|;\s*)clid=([^;]+)/)
-  if (match) {
-    clientId = match[1]
-  } else {
-    clientId = crypto.randomUUID()
-  }
+  const clientId: string = match ? match[1]! : crypto.randomUUID()
 
   // Forward client ID via request header so API handlers can use it immediately
   const requestHeaders = new Headers(request.headers)

@@ -16,7 +16,7 @@ async function migrateUsers() {
 
     const parts = student.name.split(' ')
     const firstName = parts[0]?.toLowerCase() || 'student'
-    const lastName = parts.length > 1 ? parts[1].toLowerCase() : ''
+    const lastName = (parts[1]?.toLowerCase()) || ''
     const email = `${firstName}.${lastName}@mtusi.local`
 
     const passwordHash = await bcrypt.hash('Student2024!', 12)
