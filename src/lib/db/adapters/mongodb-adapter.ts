@@ -149,18 +149,23 @@ export class MongoAdapter extends DatabaseAdapter {
   async studentFindMany({ select, orderBy, include }: { select?: Record<string, unknown>; orderBy?: Record<string, unknown>; include?: Record<string, unknown> }): Promise<Student[]> {
     const projection = select ? this.mapSelectToProjection(select) : {}
     const sort = orderBy ? this.mapOrderByToSort(orderBy) : {}
-    const cursor = this.cols.students.find({}, { projection }).sort(sort)
+    const students = await this.cols.students.find({}, { projection }).sort(sort).toArray()
 
     if (include?.progress) {
-      const students = await cursor.toArray()
-      for (const student of students) {
-        const progressDocs = await this.cols.labProgress.find({ studentId: student._id.toString() }).toArray()
-        student.progress = this.mapDocs(progressDocs)
+      // Single bulk fetch instead of N queries
+      const allProgress = await this.cols.labProgress.find({}).toArray()
+      const progressByStudent = new Map<string, unknown[]>()
+      for (const p of allProgress) {
+        const sid = p.studentId as string
+        if (!progressByStudent.has(sid)) progressByStudent.set(sid, [])
+        progressByStudent.get(sid)!.push(this.mapDoc(p))
       }
-      return this.mapDocs<Student>(students)
+      for (const student of students) {
+        ;(student as any).progress = progressByStudent.get(student._id.toString()) || []
+      }
     }
 
-    return this.mapDocs<Student>(await cursor.toArray())
+    return this.mapDocs<Student>(students)
   }
 
   async studentFindUnique({ where }: { where: { id: string } }): Promise<Student | null> {
@@ -369,36 +374,77 @@ export class MongoAdapter extends DatabaseAdapter {
   async getDashboardData(): Promise<DashboardData> {
     const students = await this.cols.students.find({}).toArray()
     const labs = await this.cols.labs.find({}).sort({ order: 1 }).toArray()
-    const submissions = await this.cols.flagSubmissions.find({})
-      .sort({ createdAt: -1 })
-      .limit(20)
-      .toArray()
 
-    // Resolve student and lab names for submissions
-    const recentSubmissions: RecentSubmission[] = []
-    for (const sub of submissions) {
-      const student = await this.cols.students.findOne({ _id: this.toObjectId(sub.studentId) }, { projection: { name: true } })
-      const lab = await this.cols.labs.findOne({ _id: this.toObjectId(sub.labId) }, { projection: { title: true } })
-      recentSubmissions.push({
-        id: sub._id.toString(),
-        studentId: sub.studentId,
-        labId: sub.labId,
-        studentName: student?.name || 'Unknown',
-        labTitle: lab?.title || 'Unknown',
-        flagKey: sub.flagKey,
-        correct: sub.correct,
-        createdAt: sub.createdAt,
-      })
-    }
+    // Single aggregation with $lookup to resolve student/lab names
+    const recentSubmissionsAgg = await this.cols.flagSubmissions.aggregate([
+      { $sort: { createdAt: -1 } },
+      { $limit: 20 },
+      {
+        $lookup: {
+          from: 'students',
+          localField: 'studentId',
+          foreignField: '_id',
+          as: 'studentDoc',
+        },
+      },
+      { $unwind: { path: '$studentDoc', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'labs',
+          localField: 'labId',
+          foreignField: '_id',
+          as: 'labDoc',
+        },
+      },
+      { $unwind: { path: '$labDoc', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          id: { $toString: '$_id' },
+          studentId: 1,
+          labId: 1,
+          studentName: { $ifNull: ['$studentDoc.name', 'Unknown'] },
+          labTitle: { $ifNull: ['$labDoc.title', 'Unknown'] },
+          flagKey: 1,
+          correct: 1,
+          createdAt: 1,
+        },
+      },
+    ]).toArray()
+
+    const recentSubmissions: RecentSubmission[] = recentSubmissionsAgg.map((s: Record<string, unknown>) => ({
+      id: s.id as string,
+      studentId: s.studentId as string,
+      labId: s.labId as string,
+      studentName: s.studentName as string,
+      labTitle: s.labTitle as string,
+      flagKey: s.flagKey as string,
+      correct: s.correct as boolean,
+      createdAt: s.createdAt as Date,
+    }))
 
     // Submission stats
     const submissionStats = await this.flagSubmissionGroupBy({ by: ['correct'], _count: true })
     const totalSubmissions = submissionStats.reduce((sum: number, s: { _count: number }) => sum + s._count, 0)
     const correctSubmissions = submissionStats.find((s: { correct: boolean; _count: number }) => s.correct)?._count || 0
 
-    // Student stats
-    const studentStats = await Promise.all(students.map(async (student: { _id: { toString(): string }; name: string; group: string }) => {
-      const progress = await this.cols.labProgress.find({ studentId: student._id.toString() }).toArray()
+    // Fetch ALL progress documents once instead of N queries
+    const allProgress = await this.cols.labProgress.find({}).toArray()
+
+    // Build lookup maps: studentId -> progress[], labId -> progress[]
+    const progressByStudent = new Map<string, typeof allProgress>()
+    const progressByLab = new Map<string, typeof allProgress>()
+    for (const p of allProgress) {
+      const sid = p.studentId as string
+      const lid = p.labId as string
+      if (!progressByStudent.has(sid)) progressByStudent.set(sid, [])
+      progressByStudent.get(sid)!.push(p)
+      if (!progressByLab.has(lid)) progressByLab.set(lid, [])
+      progressByLab.get(lid)!.push(p)
+    }
+
+    // Student stats from pre-fetched progress (zero extra queries)
+    const studentStats = students.map((student: { _id: { toString(): string }; name: string; group: string }) => {
+      const progress = progressByStudent.get(student._id.toString()) || []
       const totalScore = progress.reduce((sum: number, p: { score?: number }) => sum + (p.score || 0), 0)
       const completedLabs = progress.filter((p: { status?: string }) => p.status === 'completed').length
       const inProgressLabs = progress.filter((p: { status?: string }) => p.status === 'in_progress').length
@@ -411,19 +457,13 @@ export class MongoAdapter extends DatabaseAdapter {
         inProgressLabs,
         totalLabs: labs.length,
       }
-    }))
-    studentStats.sort((a: { totalScore: number }, b: { totalScore: number }) => b.totalScore - a.totalScore)
+    }).sort((a: { totalScore: number }, b: { totalScore: number }) => b.totalScore - a.totalScore)
 
-    // Lab stats
-    const labStatsPromises = labs.map(async (lab: { _id: { toString(): string }; number: number; title: string; difficulty: string }) => {
-      const studentIds = students.map((s: { _id: { toString(): string } }) => s._id.toString())
-      let completed = 0
-      let inProgress = 0
-      for (const sid of studentIds) {
-        const p = await this.cols.labProgress.findOne({ studentId: sid, labId: lab._id.toString() })
-        if (p?.status === 'completed') completed++
-        else if (p?.status === 'in_progress') inProgress++
-      }
+    // Lab stats from pre-fetched progress (zero extra queries instead of M*N)
+    const labStats = labs.map((lab: { _id: { toString(): string }; number: number; title: string; difficulty: string }) => {
+      const progress = progressByLab.get(lab._id.toString()) || []
+      const completed = progress.filter((p: { status?: string }) => p.status === 'completed').length
+      const inProgress = progress.filter((p: { status?: string }) => p.status === 'in_progress').length
       return {
         id: lab._id.toString(),
         number: lab.number,
@@ -434,7 +474,6 @@ export class MongoAdapter extends DatabaseAdapter {
         totalStudents: students.length,
       }
     })
-    const labStats = await Promise.all(labStatsPromises)
 
     return {
       studentStats,
