@@ -7,6 +7,24 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '@/lib/password-validation'
+
+const passwordRules: { regex: RegExp; message: string }[] = [
+  { regex: /[A-Z]/, message: 'Нужна хотя бы одна заглавная буква' },
+  { regex: /[a-z]/, message: 'Нужна хотя бы одна строчная буква' },
+  { regex: /[0-9]/, message: 'Нужна хотя бы одна цифра' },
+  { regex: /[^A-Za-z0-9]/, message: 'Нужен хотя бы один специальный символ' },
+]
+
+function getPasswordErrors(password: string): string[] {
+  const errors: string[] = []
+  if (password.length < PASSWORD_MIN_LENGTH) errors.push('Минимум 10 символов')
+  if (password.length > PASSWORD_MAX_LENGTH) errors.push('Максимум 100 символов')
+  for (const rule of passwordRules) {
+    if (!rule.regex.test(password)) errors.push(rule.message)
+  }
+  return errors
+}
 
 export default function RegisterPage() {
   const [name, setName] = useState('')
@@ -29,17 +47,11 @@ export default function RegisterPage() {
       return
     }
 
-    const passwordErrors: string[] = []
-    if (password.length < 10) passwordErrors.push('Минимум 10 символов')
-    if (!/[A-Z]/.test(password)) passwordErrors.push('Нужна хотя бы одна заглавная буква')
-    if (!/[a-z]/.test(password)) passwordErrors.push('Нужна хотя бы одна строчная буква')
-    if (!/[0-9]/.test(password)) passwordErrors.push('Нужна хотя бы одна цифра')
-    if (!/[^A-Za-z0-9]/.test(password)) passwordErrors.push('Нужен хотя бы один специальный символ')
-
-    if (passwordErrors.length > 0) {
+    const errors = getPasswordErrors(password)
+    if (errors.length > 0) {
       toast({
         title: 'Ошибка',
-        description: passwordErrors.join('. '),
+        description: errors.join('. '),
         variant: 'destructive',
       })
       return

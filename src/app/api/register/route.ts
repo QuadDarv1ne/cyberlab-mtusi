@@ -4,18 +4,12 @@ import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 import { withErrorHandling } from '@/lib/api-helpers'
+import { passwordSchema } from '@/lib/password-validation'
 
 const registerSchema = z.object({
   name: z.string().min(1, 'Имя обязательно').max(100),
   email: z.string().email('Неверный формат email'),
-  password: z
-    .string()
-    .min(10, 'Минимум 10 символов')
-    .max(100)
-    .regex(/[A-Z]/, 'Нужна хотя бы одна заглавная буква')
-    .regex(/[a-z]/, 'Нужна хотя бы одна строчная буква')
-    .regex(/[0-9]/, 'Нужна хотя бы одна цифра')
-    .regex(/[^A-Za-z0-9]/, 'Нужен хотя бы один специальный символ (!@#$%^&* и т.д.)'),
+  password: passwordSchema,
 })
 
 export async function POST(req: Request) {

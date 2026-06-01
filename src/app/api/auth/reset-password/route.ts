@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import { consumeResetToken } from '@/lib/reset-tokens'
 import { logger } from '@/lib/logger'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
+import { validatePassword } from '@/lib/password-validation'
 
 export async function POST(req: Request) {
   // Rate limit: 5 reset attempts per IP per 15 minutes to prevent token brute-forcing
@@ -29,28 +30,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Токен и пароль обязательны' }, { status: 400 })
   }
 
-  if (password.length < 10) {
-    return NextResponse.json({ error: 'Минимум 10 символов' }, { status: 400 })
-  }
-
-  if (password.length > 100) {
-    return NextResponse.json({ error: 'Максимум 100 символов' }, { status: 400 })
-  }
-
-  if (!/[A-Z]/.test(password)) {
-    return NextResponse.json({ error: 'Нужна хотя бы одна заглавная буква' }, { status: 400 })
-  }
-
-  if (!/[a-z]/.test(password)) {
-    return NextResponse.json({ error: 'Нужна хотя бы одна строчная буква' }, { status: 400 })
-  }
-
-  if (!/[0-9]/.test(password)) {
-    return NextResponse.json({ error: 'Нужна хотя бы одна цифра' }, { status: 400 })
-  }
-
-  if (!/[^A-Za-z0-9]/.test(password)) {
-    return NextResponse.json({ error: 'Нужен хотя бы один специальный символ' }, { status: 400 })
+  const passwordError = validatePassword(password)
+  if (passwordError) {
+    return NextResponse.json({ error: passwordError }, { status: 400 })
   }
 
   try {

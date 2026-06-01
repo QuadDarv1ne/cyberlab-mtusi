@@ -36,7 +36,7 @@ export async function middleware(request: NextRequest) {
       }
       // Forward user info via headers for API handlers
       requestHeaders.set('x-user-id', session.user.id)
-      requestHeaders.set('x-user-role', String(session.user.role))
+      requestHeaders.set('x-user-role', session.user.role ?? 'STUDENT')
       requestHeaders.set('x-user-student-id', session.user.studentId ?? '')
     }
   }
